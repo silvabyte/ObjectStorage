@@ -1,0 +1,30 @@
+services:
+  objectstorage:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - OBJECT_STORAGE_HOST=0.0.0.0
+      - OBJECT_STORAGE_PORT=8080
+      - KEYDB_HOST=keydb
+      - KEYDB_PORT=6379
+      - LOG_PRETTY=false
+    volumes:
+      - storage-data:/app/bucket
+    depends_on:
+      - keydb
+    restart: unless-stopped
+
+  keydb:
+    image: eqalpha/keydb:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - keydb-data:/data
+    restart: unless-stopped
+
+volumes:
+  storage-data:
+  keydb-data:

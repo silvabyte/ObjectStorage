@@ -1,0 +1,33 @@
+package build
+
+import mill._, scalalib._
+
+object ObjectStorage extends ScalaModule {
+  def scalaVersion = "3.7.2"
+
+  def ivyDeps = Agg(
+    // HTTP server
+    ivy"com.lihaoyi::cask:0.9.7",
+    // JSON serialization
+    ivy"com.lihaoyi::upickle:4.1.0",
+    // File system operations
+    ivy"com.lihaoyi::os-lib:0.11.3",
+    // HTTP client (for API client)
+    ivy"com.lihaoyi::requests:0.9.0",
+    // Logging
+    ivy"com.outr::scribe:3.6.6",
+    // Redis/KeyDB for distributed locking
+    ivy"io.lettuce:lettuce-core:6.3.2.RELEASE"
+  )
+
+  def mainClass = Some("objectstorage.ObjectStorageApp")
+
+  object test extends ScalaTests {
+    def ivyDeps = Agg(
+      ivy"com.lihaoyi::utest:0.8.5",
+      ivy"org.scalamock::scalamock:7.1.0",
+      ivy"org.scalatest::scalatest:3.2.19"
+    )
+    def testFramework = "utest.runner.Framework"
+  }
+}
