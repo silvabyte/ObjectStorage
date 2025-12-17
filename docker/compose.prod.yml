@@ -1,0 +1,75 @@
+# ObjectStorage Production Docker Compose
+# Use with: docker compose -f docker/compose.prod.yml up -d
+
+services:
+  # Optional: Cloudflare Tunnel for secure external access
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: objectstorage-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      objectstorage:
+        condition: service_healthy
+    networks:
+      - objectstorage-net
+    profiles:
+      - tunnel
+
+  objectstorage:
+    image: ghcr.io/silvabyte/objectstorage:latest
+    container_name: objectstorage
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - "${OBJECT_STORAGE_PORT:-8080}:${OBJECT_STORAGE_PORT:-8080}"
+    environment:
+      - OBJECT_STORAGE_HOST=0.0.0.0
+      - OBJECT_STORAGE_PORT=${OBJECT_STORAGE_PORT:-8080}
+      - KEYDB_HOST=keydb
+      - KEYDB_PORT=6379
+      - LOG_PRETTY=false
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xms512m -Xmx4g
+    volumes:
+      - ${STORAGE_PATH:-/data/objectstorage}:/app/bucket
+    depends_on:
+      keydb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://127.0.0.1:${OBJECT_STORAGE_PORT:-8080}/api/v1/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - objectstorage-net
+
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: objectstorage-keydb
+    restart: unless-stopped
+    volumes:
+      - ${KEYDB_DATA_PATH:-keydb-data}:/data
+    healthcheck:
+      test: ["CMD", "keydb-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - objectstorage-net
+
+volumes:
+  keydb-data:
+    driver: local
+
+networks:
+  objectstorage-net:
+    driver: bridge

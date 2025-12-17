@@ -1,15 +1,18 @@
 package objectstorage.config
 
-/** Application error type for ObjectStorage.
-  *
-  * Provides a consistent error type with optional cause tracking.
-  */
+import objectstorage.logging.Log
+
+/**
+ * Application error type for ObjectStorage.
+ *
+ * Provides a consistent error type with optional cause tracking.
+ */
 case class AppError(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull) {
 
   /** Log this error using the Log utility */
   def log(): Unit = {
-    objectstorage.logging.Log.error(message)
-    cause.foreach(c => objectstorage.logging.Log.error(c.getMessage))
+    Log.error(message)
+    cause.foreach(c => Log.error(c.getMessage))
   }
 }
 

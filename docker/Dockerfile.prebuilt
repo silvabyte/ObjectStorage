@@ -1,21 +1,6 @@
-# ObjectStorage - Standalone Object Storage Service
-# Multi-stage build for smaller final image
+# ObjectStorage - Runtime-only image (use with pre-built JAR)
+# Use this when JAR is built externally (e.g., CI/CD pipeline)
 
-# Build stage (optional - use if building from source)
-FROM eclipse-temurin:21-jdk-alpine AS builder
-
-WORKDIR /build
-
-# Copy mill wrapper and build files
-COPY mill mill
-COPY build.mill build.mill
-COPY .mill-version .mill-version
-COPY ObjectStorage/ ObjectStorage/
-
-# Build the assembly JAR
-RUN chmod +x mill && ./mill ObjectStorage.assembly
-
-# Final runtime image
 FROM eclipse-temurin:21-jre-alpine
 
 # Install curl for healthchecks
@@ -23,8 +8,8 @@ RUN apk add --no-cache curl
 
 WORKDIR /app
 
-# Copy built JAR from builder stage
-COPY --from=builder /build/out/ObjectStorage/assembly.dest/out.jar /app/objectstorage.jar
+# Copy pre-built JAR (build externally with: ./mill ObjectStorage.assembly)
+COPY out/ObjectStorage/assembly.dest/out.jar /app/objectstorage.jar
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S objectstorage && \

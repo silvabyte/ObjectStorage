@@ -1,0 +1,534 @@
+openapi: 3.0.3
+info:
+  title: ObjectStorage API
+  description: |
+    REST API for file storage and management operations.
+    Provides multi-tenant file storage with metadata management, checksums, and deduplication.
+  version: 1.0.0
+  contact:
+    name: Silvabyte
+    url: https://github.com/silvabyte/ObjectStorage
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+security:
+  - TenantAuth: []
+
+paths:
+  /files/list:
+    get:
+      summary: List all files for a tenant and user
+      description: Returns a list of all files with metadata for the authenticated tenant and user
+      operationId: listFiles
+      tags:
+        - Files
+      responses:
+        "200":
+          description: List of files retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StoredObject"
+                  status:
+                    type: string
+                    enum: [success]
+                required:
+                  - files
+                  - status
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /files/metadata/{objectId}:
+    get:
+      summary: Get file metadata
+      description: Retrieve metadata for a specific file using its UUID
+      operationId: getFileMetadata
+      tags:
+        - Metadata
+      parameters:
+        - name: objectId
+          in: path
+          required: true
+          description: UUID of the file object
+          schema:
+            type: string
+            format: uuid
+          example: "7d285861-2113-4c0e-82ec-4583b7f43e6c"
+      responses:
+        "200":
+          description: File metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /files/{objectId}:
+    get:
+      summary: Download file
+      description: Download the actual file content using its UUID
+      operationId: downloadFile
+      tags:
+        - Files
+      parameters:
+        - name: objectId
+          in: path
+          required: true
+          description: UUID of the file object
+          schema:
+            type: string
+            format: uuid
+          example: "7d285861-2113-4c0e-82ec-4583b7f43e6c"
+      responses:
+        "200":
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+            video/*:
+              schema:
+                type: string
+                format: binary
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Delete file
+      description: Delete a file and its metadata using its UUID
+      operationId: deleteFile
+      tags:
+        - Files
+      parameters:
+        - name: objectId
+          in: path
+          required: true
+          description: UUID of the file object to delete
+          schema:
+            type: string
+            format: uuid
+          example: "7d285861-2113-4c0e-82ec-4583b7f43e6c"
+      responses:
+        "200":
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /files/form:
+    post:
+      summary: Upload file using form data
+      description: Upload a file using multipart form data
+      operationId: uploadFileForm
+      tags:
+        - Files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload
+              required:
+                - file
+      responses:
+        "201":
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /files:
+    post:
+      summary: Upload file using stream
+      description: Upload a file using raw binary stream with filename in headers
+      operationId: uploadFileStream
+      tags:
+        - Files
+      parameters:
+        - name: x-file-name
+          in: header
+          required: true
+          description: Name of the file being uploaded
+          schema:
+            type: string
+          example: "recording.wav"
+        - name: x-mimetype
+          in: header
+          required: false
+          description: MIME type of the file
+          schema:
+            type: string
+          example: "audio/wav"
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /files/checksum/{checksum}:
+    get:
+      summary: Find file by checksum
+      description: Lookup a file by its SHA-256 checksum to check for duplicates
+      operationId: findFileByChecksum
+      tags:
+        - Files
+      parameters:
+        - name: checksum
+          in: path
+          required: true
+          description: SHA-256 checksum of the file
+          schema:
+            type: string
+            pattern: "^[a-fA-F0-9]{64}$"
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      responses:
+        "200":
+          description: File found with matching checksum
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "404":
+          description: No file found with matching checksum
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /files/{objectId}/ndjson/append/stream:
+    post:
+      summary: Append to NDJSON file
+      description: Append stream content to an existing NDJSON file
+      operationId: appendToNdjsonFile
+      tags:
+        - Files
+      parameters:
+        - name: objectId
+          in: path
+          required: true
+          description: UUID of the NDJSON file object
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Content appended successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: File is locked by another process
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /files/{objectId}/ndjson/items/stream:
+    get:
+      summary: Stream NDJSON items
+      description: Stream NDJSON file items as raw stream
+      operationId: streamNdjsonItems
+      tags:
+        - Files
+      parameters:
+        - name: objectId
+          in: path
+          required: true
+          description: UUID of the NDJSON file object
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: NDJSON stream
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /files/migrate:
+    post:
+      summary: Migrate files to new storage format
+      description: |
+        Migrate files from old path pattern to new object ID-based system.
+        This is an administrative operation.
+      operationId: migrateFiles
+      tags:
+        - Admin
+      responses:
+        "200":
+          description: Files migrated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Files migrated successfully"
+                  status:
+                    type: string
+                    enum: [success]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /health:
+    get:
+      summary: Health check
+      description: Check if the service is healthy
+      operationId: healthCheck
+      tags:
+        - Health
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+
+  /ping:
+    get:
+      summary: Ping
+      description: Simple ping endpoint
+      operationId: ping
+      tags:
+        - Health
+      security: []
+      responses:
+        "200":
+          description: Pong
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    enum: [pong]
+
+components:
+  securitySchemes:
+    TenantAuth:
+      type: apiKey
+      description: |
+        Multi-tenant authentication using headers.
+        Both x-tenant-id and x-user-id are required for all file operations.
+      name: x-tenant-id
+      in: header
+
+  schemas:
+    StoredObject:
+      type: object
+      description: Metadata about a stored file object
+      properties:
+        objectId:
+          type: string
+          format: uuid
+          description: Unique identifier for the object
+          example: "7d285861-2113-4c0e-82ec-4583b7f43e6c"
+        bucket:
+          type: string
+          description: The bucket or container path
+          example: "/bucket/tenant-123/user-456"
+        fileName:
+          type: string
+          description: Original file name
+          example: "recording.wav"
+        size:
+          type: integer
+          format: int64
+          description: Size in bytes
+          example: 1048576
+        mimeType:
+          type: string
+          nullable: true
+          description: MIME type of the object
+          example: "audio/wav"
+        contentType:
+          type: string
+          nullable: true
+          description: Content type (same as MIME type)
+          example: "audio/wav"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the object was first stored
+          example: "2025-01-15T10:30:00Z"
+        lastModified:
+          type: string
+          format: date-time
+          description: Last time the object was modified
+          example: "2025-01-15T10:30:00Z"
+        checksum:
+          type: string
+          nullable: true
+          description: SHA-256 checksum of the file content
+          pattern: "^[a-fA-F0-9]{64}$"
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        etag:
+          type: string
+          nullable: true
+          description: ETag for cache validation and integrity checks
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      required:
+        - objectId
+        - bucket
+        - fileName
+        - size
+        - createdAt
+        - lastModified
+
+    FileResponse:
+      type: object
+      description: Standard response for file operations
+      properties:
+        file:
+          $ref: "#/components/schemas/StoredObject"
+        status:
+          type: string
+          enum: [success]
+      required:
+        - file
+        - status
+
+    ErrorResponse:
+      type: object
+      description: Standard error response
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+          example: "File not found"
+        status:
+          type: string
+          enum: [error, not_found]
+          description: Error status indicator
+      required:
+        - message
+        - status
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input or missing required headers
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            invalidUuid:
+              summary: Invalid UUID format
+              value:
+                message: "Invalid objectId: abc123"
+                status: "error"
+            missingTenantId:
+              summary: Missing tenant ID header
+              value:
+                message: "Request is missing required header: 'x-tenant-id'"
+                status: "error"
+            missingUserId:
+              summary: Missing user ID header
+              value:
+                message: "Request is missing required header: 'x-user-id'"
+                status: "error"
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: "Authentication required"
+            status: "error"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          examples:
+            fileNotFound:
+              summary: File not found
+              value:
+                message: "File 7d285861-2113-4c0e-82ec-4583b7f43e6c not found"
+                status: "error"
+
+tags:
+  - name: Files
+    description: File storage and management operations
+  - name: Metadata
+    description: File metadata operations
+  - name: Health
+    description: Health check endpoints
+  - name: Admin
+    description: Administrative operations
