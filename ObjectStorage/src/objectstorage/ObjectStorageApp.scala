@@ -2,6 +2,7 @@ package objectstorage
 
 import objectstorage.config.Config
 import objectstorage.logging.Log
+import objectstorage.routes.{FileRoutes, IndexRoutes}
 
 /** ObjectStorage application entry point.
   *
@@ -17,6 +18,9 @@ object ObjectStorageApp extends cask.Main {
 
   Log.info("Starting ObjectStorageApp", Map("host" -> host, "port" -> port))
 
-  // Routes will be added in task .3
-  val allRoutes: Seq[cask.Routes] = Seq.empty
+  // Wire up all routes
+  val allRoutes: Seq[cask.Routes] = Seq(
+    IndexRoutes(),
+    FileRoutes()
+  )
 }
