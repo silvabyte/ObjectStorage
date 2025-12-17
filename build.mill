@@ -26,8 +26,15 @@ object ObjectStorage extends ScalaModule {
     def ivyDeps = Agg(
       ivy"com.lihaoyi::utest:0.8.5",
       ivy"org.scalamock::scalamock:7.1.0",
-      ivy"org.scalatest::scalatest:3.2.19"
+      ivy"org.scalatest::scalatest:3.2.19",
+      // Undertow for test server
+      ivy"io.undertow:undertow-core:2.3.18.Final"
     )
     def testFramework = "utest.runner.Framework"
+
+    // Include test resources
+    def resources = Task.Sources {
+      super.resources() ++ Seq(PathRef(millSourcePath / "resources"))
+    }
   }
 }

@@ -3,6 +3,9 @@ package objectstorage
 import objectstorage.config.Config
 import objectstorage.logging.Log
 import objectstorage.routes.{FileRoutes, IndexRoutes}
+import objectstorage.decorators.Decorators._
+import cask._
+import java.util.concurrent.atomic.AtomicReference
 
 /** ObjectStorage application entry point.
   *
@@ -16,11 +19,24 @@ object ObjectStorageApp extends cask.Main {
   override def port: Int = Config.OBJECT_STORAGE_PORT
   override def host: String = Config.stripProtocol(Config.OBJECT_STORAGE_HOST)
 
+  // Decorators for global middleware
+  override def mainDecorators: Seq[RawDecorator] = Seq(withResponseLog())
+
   Log.info("Starting ObjectStorageApp", Map("host" -> host, "port" -> port))
 
-  // Wire up all routes
-  val allRoutes: Seq[cask.Routes] = Seq(
+  // Define routes dynamically for easier testing
+  private val routesRef: AtomicReference[Seq[cask.Routes]] =
+    new AtomicReference(initializeRoutes())
+
+  def allRoutes: Seq[cask.Routes] = routesRef.get()
+
+  private def initializeRoutes(): Seq[cask.Routes] = Seq(
     IndexRoutes(),
     FileRoutes()
   )
+
+  /** Override routes for testing or other purposes */
+  def configureRoutes(routes: Seq[cask.Routes]): Unit = {
+    routesRef.set(routes)
+  }
 }
