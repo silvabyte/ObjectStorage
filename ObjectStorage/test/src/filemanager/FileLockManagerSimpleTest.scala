@@ -23,16 +23,16 @@ object FileLockManagerSimpleTest extends TestSuite {
 
         assert(lockContext.processId == processId)
         assert(lockContext.createdAt == now)
-        assert(lockContext.timeoutMinutes == 5)
+        assert(lockContext.timeoutSeconds == 30)
       }
 
       test("should check expiration correctly") {
         val processId = "test-process-123"
-        val sixMinutesAgo = Instant.now.minusSeconds(360)
+        val fortySecondsAgo = Instant.now.minusSeconds(40)
         val now = Instant.now
 
-        val expiredLock = LockContext(processId, sixMinutesAgo, 5) // 5 minute timeout
-        val activeLock = LockContext(processId, now, 5)            // 5 minute timeout
+        val expiredLock = LockContext(processId, fortySecondsAgo, 30) // 30 second timeout
+        val activeLock = LockContext(processId, now, 30)              // 30 second timeout
 
         assert(expiredLock.isExpired)
         assert(!activeLock.isExpired)
@@ -48,7 +48,7 @@ object FileLockManagerSimpleTest extends TestSuite {
 
         assert(deserializedLock.processId == originalLock.processId)
         assert(deserializedLock.createdAt == originalLock.createdAt)
-        assert(deserializedLock.timeoutMinutes == originalLock.timeoutMinutes)
+        assert(deserializedLock.timeoutSeconds == originalLock.timeoutSeconds)
       }
     }
 
@@ -124,7 +124,7 @@ object FileLockManagerSimpleTest extends TestSuite {
 
         assert(readLockContext.processId == lockContext.processId)
         assert(readLockContext.createdAt == lockContext.createdAt)
-        assert(readLockContext.timeoutMinutes == lockContext.timeoutMinutes)
+        assert(readLockContext.timeoutSeconds == lockContext.timeoutSeconds)
 
         // Cleanup
         os.remove.all(tempDir)
@@ -242,9 +242,9 @@ object FileLockManagerSimpleTest extends TestSuite {
         val tempDir = os.temp.dir()
         val lockFile = tempDir / "expiring.lock"
 
-        // Create expired lock (created 10 minutes ago with 5 minute timeout)
-        val expiredTime = Instant.now.minusSeconds(600)
-        val expiredLock = LockContext("expired-process", expiredTime, 5)
+        // Create expired lock (created 40 seconds ago with 30 second timeout)
+        val expiredTime = Instant.now.minusSeconds(40)
+        val expiredLock = LockContext("expired-process", expiredTime, 30)
         os.write.over(lockFile, ujsonWrite(expiredLock))
 
         // Read and check expiration

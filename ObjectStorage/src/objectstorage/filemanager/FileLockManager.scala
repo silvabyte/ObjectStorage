@@ -12,10 +12,10 @@ import objectstorage.config.AppError
 case class LockContext(
     processId: String,
     createdAt: Instant,
-    timeoutMinutes: Int = 5
+    timeoutSeconds: Int = 30
 ) {
   def isExpired: Boolean = {
-    val expiredAt = createdAt.plusSeconds(timeoutMinutes * 60)
+    val expiredAt = createdAt.plusSeconds(timeoutSeconds)
     Instant.now.isAfter(expiredAt)
   }
 }
@@ -44,10 +44,11 @@ case class FileContext(
   def contextString: String = s"$tenantId/$userId/$objectId"
 }
 
-/** Distributed file locking manager using file-based locks.
-  *
-  * Provides atomic lock acquisition and release with automatic expiration.
-  */
+/**
+ * Distributed file locking manager using file-based locks.
+ *
+ * Provides atomic lock acquisition and release with automatic expiration.
+ */
 object FileLockManager {
   private val processId = UUID.randomUUID().toString
   private val lockBasePath = os.pwd / "bucket" / ".locks"
@@ -57,14 +58,17 @@ object FileLockManager {
     os.makeDir.all(lockBasePath)
   }
 
-  /** Attempt to acquire a lock for the given file context */
+  /** Attempt to acquire a lock for the given file context.
+    * 
+    * Self-healing: automatically removes expired or corrupted locks before acquiring.
+    */
   def tryLock(fileContext: FileContext): Either[String, LockContext] = {
     val lockPath = fileContext.lockPath(lockBasePath)
     val lockDir = lockPath / os.up
     val context = Map(
       "fileContext" -> fileContext.contextString,
-      "operation"   -> fileContext.operation,
-      "processId"   -> processId
+      "operation" -> fileContext.operation,
+      "processId" -> processId
     )
 
     // Ensure lock directory exists for this tenant/user
@@ -75,6 +79,24 @@ object FileLockManager {
           return Left("Failed to create lock directory")
         case Success(_) =>
           Log.info(s"Created lock directory", context + ("lockDir" -> lockDir.toString))
+      }
+    }
+
+    // Self-healing: check for expired or corrupted locks and remove them
+    if (os.exists(lockPath)) {
+      Try(read[LockContext](os.read(lockPath))) match {
+        case Success(existingLock) if existingLock.isExpired =>
+          Log.info(
+            s"Found expired lock, removing",
+            context + ("expiredProcessId" -> existingLock.processId) +
+              ("createdAt" -> existingLock.createdAt.toString)
+          )
+          Try(os.remove(lockPath))
+        case Success(_) =>
+          // Lock exists and is not expired - will fail below
+        case Failure(_) =>
+          Log.info(s"Found corrupted lock file, removing", context)
+          Try(os.remove(lockPath))
       }
     }
 
@@ -106,7 +128,7 @@ object FileLockManager {
               Log.error(
                 s"Lock acquisition failed - file is locked by another process",
                 context + ("existingProcessId" -> existingLock.processId) +
-                  ("existingCreatedAt" -> existingLock.createdAt.toString)
+                  ("createdAt" -> existingLock.createdAt.toString)
               )
               Left(s"File is currently locked by process ${existingLock.processId}")
             case Failure(_) =>
@@ -125,8 +147,8 @@ object FileLockManager {
     val lockPath = fileContext.lockPath(lockBasePath)
     val context = Map(
       "fileContext" -> fileContext.contextString,
-      "processId"   -> processId,
-      "lockPath"    -> lockPath.toString
+      "processId" -> processId,
+      "lockPath" -> lockPath.toString
     )
 
     if (!os.exists(lockPath)) {
@@ -165,8 +187,8 @@ object FileLockManager {
   def withLock[T](fileContext: FileContext)(operation: => Either[String, T]): Either[String, T] = {
     val context = Map(
       "fileContext" -> fileContext.contextString,
-      "operation"   -> fileContext.operation,
-      "processId"   -> processId
+      "operation" -> fileContext.operation,
+      "processId" -> processId
     )
 
     Log.info(s"Attempting to acquire lock for operation", context)
@@ -178,8 +200,7 @@ object FileLockManager {
       case Right(_) =>
         try {
           Log.info(s"Lock acquired, executing operation", context)
-          val result = operation
-          result match {
+          operation match {
             case Left(operationError) =>
               Log.error(
                 s"Operation failed while holding lock",
@@ -188,7 +209,7 @@ object FileLockManager {
             case Right(_) =>
               Log.info(s"Operation completed successfully", context)
           }
-          result
+          operation
         } finally {
           releaseLock(fileContext) match {
             case Left(releaseError) =>
@@ -203,76 +224,4 @@ object FileLockManager {
     }
   }
 
-  /** Clean up expired and corrupted lock files */
-  def cleanupExpiredLocks(): Unit = {
-    val context = Map("processId" -> processId, "lockBasePath" -> lockBasePath.toString)
-
-    Log.info("Starting cleanup of expired locks", context)
-
-    if (!os.exists(lockBasePath)) {
-      Log.info("Lock base path does not exist, skipping cleanup", context)
-      return
-    }
-
-    try {
-      val lockFiles = os.walk(lockBasePath).filter(_.last.endsWith(".lock"))
-
-      Log.info(s"Found ${lockFiles.length} lock files to check", context)
-
-      val (cleanedCount, errorCount) = lockFiles.foldLeft((0, 0)) {
-        case ((cleaned, errors), lockPath) =>
-          val lockContext = Map("lockFile" -> lockPath.toString)
-
-          Try(read[LockContext](os.read(lockPath))) match {
-            case Failure(e) =>
-              Log.error(
-                s"Failed to read lock file, removing corrupted lock",
-                lockContext + ("error" -> e.getMessage)
-              )
-              Try(os.remove(lockPath)) match {
-                case Success(_) =>
-                  Log.info(s"Removed corrupted lock file", lockContext)
-                  (cleaned + 1, errors)
-                case Failure(removeError) =>
-                  Log.error(
-                    s"Failed to remove corrupted lock file",
-                    lockContext + ("removeError" -> removeError.getMessage)
-                  )
-                  (cleaned, errors + 1)
-              }
-            case Success(lockCtx) =>
-              if (lockCtx.isExpired) {
-                Log.info(
-                  s"Found expired lock",
-                  lockContext + ("lockProcessId" -> lockCtx.processId) + ("createdAt" -> lockCtx.createdAt.toString)
-                )
-                Try(os.remove(lockPath)) match {
-                  case Success(_) =>
-                    Log.info(
-                      s"Removed expired lock",
-                      lockContext + ("lockProcessId" -> lockCtx.processId)
-                    )
-                    (cleaned + 1, errors)
-                  case Failure(removeError) =>
-                    Log.error(
-                      s"Failed to remove expired lock",
-                      lockContext + ("removeError" -> removeError.getMessage)
-                    )
-                    (cleaned, errors + 1)
-                }
-              } else {
-                (cleaned, errors)
-              }
-          }
-      }
-
-      Log.info(
-        s"Lock cleanup completed",
-        context + ("cleanedCount" -> cleanedCount) + ("errorCount" -> errorCount)
-      )
-    } catch {
-      case e: Exception =>
-        Log.error(s"Lock cleanup failed", context + ("error" -> e.getMessage))
-    }
-  }
 }

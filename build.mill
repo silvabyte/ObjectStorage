@@ -15,9 +15,7 @@ object ObjectStorage extends ScalaModule {
     // HTTP client (for API client)
     ivy"com.lihaoyi::requests:0.9.0",
     // Logging
-    ivy"com.outr::scribe:3.6.6",
-    // Redis/KeyDB for distributed locking
-    ivy"io.lettuce:lettuce-core:6.3.2.RELEASE"
+    ivy"com.outr::scribe:3.6.6"
   )
 
   def mainClass = Some("objectstorage.ObjectStorageApp")

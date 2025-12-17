@@ -51,6 +51,18 @@ object FileLockManagerTest extends TestSuite {
         }
       }
 
+      // Self-healing: check for expired or corrupted locks and remove them
+      if (os.exists(lockPath)) {
+        Try(ujsonRead[LockContext](os.read(lockPath))) match {
+          case Success(existingLock) if existingLock.isExpired =>
+            Try(os.remove(lockPath))
+          case Success(_) =>
+            // Lock exists and is not expired - will fail below
+          case Failure(_) =>
+            Try(os.remove(lockPath))
+        }
+      }
+
       val lockContext = LockContext(processId, Instant.now)
       val lockData = ujsonWrite(lockContext)
       val tempLockPath = (lockPath / os.up) / s"${lockPath.last}.tmp"
@@ -114,25 +126,6 @@ object FileLockManagerTest extends TestSuite {
       }
     }
 
-    def cleanupExpiredLocks(): Unit = {
-      if (!os.exists(lockBasePath)) {
-        return
-      }
-
-      val lockFiles = os.walk(lockBasePath).filter(_.last.endsWith(".lock"))
-
-      lockFiles.foreach { lockPath =>
-        Try(ujsonRead[LockContext](os.read(lockPath))) match {
-          case Failure(e) =>
-            Try(os.remove(lockPath))
-          case Success(lockCtx) =>
-            if (lockCtx.isExpired) {
-              Try(os.remove(lockPath))
-            }
-        }
-      }
-    }
-
     def getProcessId: String = processId
     def getLockBasePath: os.Path = lockBasePath
   }
@@ -154,16 +147,16 @@ object FileLockManagerTest extends TestSuite {
 
         assert(lockContext.processId == processId)
         assert(lockContext.createdAt == now)
-        assert(lockContext.timeoutMinutes == 5)
+        assert(lockContext.timeoutSeconds == 30)
       }
 
       test("should check expiration correctly") {
         val processId = "test-process-123"
-        val fiveMinutesAgo = Instant.now.minusSeconds(300)
+        val fortySecondsAgo = Instant.now.minusSeconds(40)
         val now = Instant.now
 
-        val expiredLock = LockContext(processId, fiveMinutesAgo, 4) // 4 minute timeout
-        val activeLock = LockContext(processId, now, 5)             // 5 minute timeout
+        val expiredLock = LockContext(processId, fortySecondsAgo, 30) // 30 second timeout
+        val activeLock = LockContext(processId, now, 30)              // 30 second timeout
 
         assert(expiredLock.isExpired)
         assert(!activeLock.isExpired)
@@ -179,7 +172,7 @@ object FileLockManagerTest extends TestSuite {
 
         assert(deserializedLock.processId == originalLock.processId)
         assert(deserializedLock.createdAt == originalLock.createdAt)
-        assert(deserializedLock.timeoutMinutes == originalLock.timeoutMinutes)
+        assert(deserializedLock.timeoutSeconds == originalLock.timeoutSeconds)
       }
     }
 
@@ -391,44 +384,35 @@ object FileLockManagerTest extends TestSuite {
       }
     }
 
-    test("FileLockManager - Cleanup Operations") {
-      test("should clean up expired locks") {
+    test("FileLockManager - Self-Healing") {
+      test("should acquire lock after expired lock is auto-removed") {
         cleanupTestDirectory()
-        val fileContext1 = createTestFileContext(objectId = UUID.randomUUID())
-        val fileContext2 = createTestFileContext(objectId = UUID.randomUUID())
+        val fileContext = createTestFileContext()
 
-        // Create expired lock
-        val expiredLockPath = fileContext1.lockPath(TestFileLockManager.getLockBasePath)
-        val expiredLockDir = expiredLockPath / os.up
-        os.makeDir.all(expiredLockDir)
+        // Create expired lock from another process
+        val lockPath = fileContext.lockPath(TestFileLockManager.getLockBasePath)
+        val lockDir = lockPath / os.up
+        os.makeDir.all(lockDir)
 
-        val expiredLock = LockContext("expired-process", Instant.now.minusSeconds(400), 5)
-        os.write.over(expiredLockPath, ujsonWrite(expiredLock))
+        val expiredLock = LockContext("expired-process", Instant.now.minusSeconds(40), 30)
+        os.write.over(lockPath, ujsonWrite(expiredLock))
 
-        // Create active lock
-        val activeLockPath = fileContext2.lockPath(TestFileLockManager.getLockBasePath)
-        val activeLockDir = activeLockPath / os.up
-        os.makeDir.all(activeLockDir)
+        // Verify expired lock exists
+        assert(os.exists(lockPath))
 
-        val activeLock = LockContext("active-process", Instant.now, 5)
-        os.write.over(activeLockPath, ujsonWrite(activeLock))
+        // tryLock should self-heal by removing expired lock and acquiring new one
+        val lockResult = TestFileLockManager.tryLock(fileContext)
+        assert(lockResult.isRight)
 
-        // Verify both locks exist
-        assert(os.exists(expiredLockPath))
-        assert(os.exists(activeLockPath))
+        // Verify new lock is owned by current process
+        val newLock = ujsonRead[LockContext](os.read(lockPath))
+        assert(newLock.processId == TestFileLockManager.getProcessId)
 
-        // Run cleanup
-        TestFileLockManager.cleanupExpiredLocks()
-
-        // Verify expired lock is removed but active lock remains
-        assert(!os.exists(expiredLockPath))
-        assert(os.exists(activeLockPath))
-
-        // Cleanup active lock
-        os.remove(activeLockPath)
+        // Cleanup
+        TestFileLockManager.releaseLock(fileContext)
       }
 
-      test("should clean up corrupted lock files") {
+      test("should acquire lock after corrupted lock is auto-removed") {
         cleanupTestDirectory()
         val fileContext = createTestFileContext()
 
@@ -442,21 +426,41 @@ object FileLockManagerTest extends TestSuite {
         // Verify corrupted lock exists
         assert(os.exists(lockPath))
 
-        // Run cleanup
-        TestFileLockManager.cleanupExpiredLocks()
+        // tryLock should self-heal by removing corrupted lock and acquiring new one
+        val lockResult = TestFileLockManager.tryLock(fileContext)
+        assert(lockResult.isRight)
 
-        // Verify corrupted lock is removed
-        assert(!os.exists(lockPath))
+        // Verify new lock is valid
+        val newLock = ujsonRead[LockContext](os.read(lockPath))
+        assert(newLock.processId == TestFileLockManager.getProcessId)
+
+        // Cleanup
+        TestFileLockManager.releaseLock(fileContext)
       }
 
-      test("should handle cleanup when lock directory doesn't exist") {
-        // Remove the entire test directory
-        if (os.exists(testLockBasePath)) {
-          os.remove.all(testLockBasePath)
-        }
+      test("should not remove active lock from another process") {
+        cleanupTestDirectory()
+        val fileContext = createTestFileContext()
 
-        // Cleanup should not throw exception
-        TestFileLockManager.cleanupExpiredLocks()
+        // Create active lock from another process
+        val lockPath = fileContext.lockPath(TestFileLockManager.getLockBasePath)
+        val lockDir = lockPath / os.up
+        os.makeDir.all(lockDir)
+
+        val activeLock = LockContext("other-process", Instant.now, 30)
+        os.write.over(lockPath, ujsonWrite(activeLock))
+
+        // tryLock should fail - active lock should not be removed
+        val lockResult = TestFileLockManager.tryLock(fileContext)
+        assert(lockResult.isLeft)
+        assert(lockResult.left.get.contains("locked by process"))
+
+        // Verify original lock is still there
+        val existingLock = ujsonRead[LockContext](os.read(lockPath))
+        assert(existingLock.processId == "other-process")
+
+        // Cleanup
+        os.remove(lockPath)
       }
     }
 

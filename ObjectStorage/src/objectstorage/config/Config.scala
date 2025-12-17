@@ -56,17 +56,6 @@ object Config {
 
   lazy val OBJECT_STORAGE_URL: String = toUrl(OBJECT_STORAGE_HOST, OBJECT_STORAGE_PORT)
 
-  // Redis/KeyDB configuration for distributed locking
-  lazy val KEYDB_HOST: String = getConfigValue("KEYDB_HOST") match {
-    case Right(value) => value
-    case Left(_)      => "localhost"
-  }
-
-  lazy val KEYDB_PORT: Int = getConfigInt("KEYDB_PORT") match {
-    case Right(value) => value
-    case Left(_)      => 6379
-  }
-
   // Logging configuration
   lazy val LOG_PRETTY: Boolean = dotenvRef.get() match {
     case None      => false

@@ -34,7 +34,6 @@ object ConfigTest extends TestSuite {
     test("Config provides defaults when not initialized") {
       // Config should provide sensible defaults
       assert(Config.OBJECT_STORAGE_PORT == 8080 || Config.isInitialized)
-      assert(Config.KEYDB_PORT == 6379 || Config.isInitialized)
     }
 
     test("AppError captures message and cause") {

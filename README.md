@@ -6,7 +6,7 @@ A standalone object storage service built with Scala 3 and Cask. Provides multi-
 
 - **Multi-tenant file storage** - Isolated storage per tenant/user
 - **Checksum-based deduplication** - SHA-256 checksums for integrity and dedup
-- **Distributed file locking** - Redis/KeyDB-backed locks for concurrent access
+- **File locking** - File-based locks for concurrent append operations
 - **REST API** - Simple HTTP API for upload, download, list, delete
 - **Streaming uploads** - Efficient handling of large files
 - **Metadata management** - Custom metadata per file
@@ -17,7 +17,6 @@ A standalone object storage service built with Scala 3 and Cask. Provides multi-
 
 - JDK 21+
 - [Mill](https://mill-build.org/) build tool
-- Redis or KeyDB (for distributed locking)
 
 ### Build & Run
 
@@ -72,13 +71,11 @@ All requests require:
 
 Environment variables:
 
-| Variable              | Description       | Default     |
-| --------------------- | ----------------- | ----------- |
-| `OBJECT_STORAGE_HOST` | Server host       | `0.0.0.0`   |
-| `OBJECT_STORAGE_PORT` | Server port       | `8080`      |
-| `KEYDB_HOST`          | Redis/KeyDB host  | `localhost` |
-| `KEYDB_PORT`          | Redis/KeyDB port  | `6379`      |
-| `LOG_PRETTY`          | Pretty print logs | `false`     |
+| Variable              | Description       | Default   |
+| --------------------- | ----------------- | --------- |
+| `OBJECT_STORAGE_HOST` | Server host       | `0.0.0.0` |
+| `OBJECT_STORAGE_PORT` | Server port       | `8080`    |
+| `LOG_PRETTY`          | Pretty print logs | `false`   |
 
 ## Development
 
