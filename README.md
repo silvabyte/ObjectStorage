@@ -1,14 +1,14 @@
 # ObjectStorage
 
-A standalone object storage service built with Scala 3 and Cask. Provides multi-tenant file management with checksums, deduplication, and distributed locking.
+A standalone object storage service built with Scala 3 and Cask. Provides multi-tenant file management with checksums, deduplication, and append only locking.
 
 ## Features
 
 - **Multi-tenant file storage** - Isolated storage per tenant/user
 - **Checksum-based deduplication** - SHA-256 checksums for integrity and dedup
-- **File locking** - File-based locks for concurrent append operations
 - **REST API** - Simple HTTP API for upload, download, list, delete
 - **Streaming uploads** - Efficient handling of large files
+- **File locking** - File-based locks for concurrent append only operations
 - **Metadata management** - Custom metadata per file
 
 ## Quick Start
