@@ -11,6 +11,8 @@ A standalone object storage service built with Scala 3 and Cask. Provides multi-
 - **File locking** - File-based locks for concurrent append only operations
 - **Metadata management** - Custom metadata per file
 
+AI Disclaimer: This project uses AI assistance for documentation creation as well as code generation for monotonous tasks. All architecture, design and more interesting code creation is done by a [human](https://x.com/MatSilva)
+
 ## Quick Start
 
 ### Prerequisites

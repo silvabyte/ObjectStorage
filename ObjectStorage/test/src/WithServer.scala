@@ -9,7 +9,7 @@ import objectstorage.config.Config
 import objectstorage.ObjectStorageApp
 import objectstorage.models.StoredObject
 import objectstorage.client.ObjectStorageClient
-import objectstorage.routes.FileRoutes
+import objectstorage.routes.{FileRoutes, IndexRoutes}
 import objectstorage.filemanager.FileManager
 
 /** Test server harness for integration tests.
@@ -18,7 +18,7 @@ import objectstorage.filemanager.FileManager
   */
 object TestServer {
 
-  val routes = Seq(new FileRoutes())
+  val routes = Seq(new IndexRoutes(), new FileRoutes())
 
   // disable requests throwing an error for non 200 responses
   implicit val checked: Boolean = false
