@@ -215,6 +215,23 @@ object FileLockManagerTest extends TestSuite {
 
         assert(contextString == expectedString)
       }
+
+      test("should handle special characters in tenant/user IDs") {
+        val tenantId = "tenant-with-dashes_and_underscores"
+        val userId = "user@domain.com"
+        val objectId = UUID.randomUUID()
+        val fileContext = FileContext(tenantId, userId, objectId)
+
+        val basePath = os.temp.dir()
+        val lockPath = fileContext.lockPath(basePath)
+        val expectedPath = basePath / tenantId / userId / s"${objectId.toString}.lock"
+
+        assert(lockPath == expectedPath)
+        assert(fileContext.contextString == s"$tenantId/$userId/$objectId")
+
+        // Cleanup
+        os.remove.all(basePath)
+      }
     }
 
     test("FileLockManager - Basic Operations") {

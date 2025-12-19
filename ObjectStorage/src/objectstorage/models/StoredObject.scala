@@ -1,8 +1,11 @@
 package objectstorage.models
 
-import upickle.default.{ReadWriter, macroRW, readwriter, write, read}
+import upickle.default.{ReadWriter, readwriter, write, read}
 import java.time.Instant
 import java.util.UUID
+import boogieloops.schema.derivation.Schematic
+import boogieloops.schema.derivation.CollectionSchemas.given
+import boogieloops.schema.bl
 
 /** Upickle serialization helpers for common types */
 object Picklers {
@@ -13,6 +16,13 @@ object Picklers {
   // UUID serialization/deserialization
   given uuidRW: ReadWriter[UUID] =
     readwriter[String].bimap[UUID](_.toString, UUID.fromString)
+
+  // Schematic instances for custom types (maps to JSON Schema string with format)
+  given uuidSchematic: Schematic[UUID] =
+    Schematic.instance(bl.String(format = Some("uuid")))
+
+  given instantSchematic: Schematic[Instant] =
+    Schematic.instance(bl.String(format = Some("date-time")))
 }
 
 /** Represents a stored file object with metadata.
@@ -40,24 +50,37 @@ object Picklers {
   * @param metadata
   *   Additional user-defined metadata
   */
+@Schematic.title("StoredObject")
+@Schematic.description("Metadata about a stored file object")
 case class StoredObject(
+    @Schematic.description("Unique identifier for the object")
     objectId: UUID,
+    @Schematic.description("The bucket or container path")
     bucket: String,
+    @Schematic.description("Original file name")
     fileName: String,
+    @Schematic.description("Size in bytes")
+    @Schematic.minimum(0)
     size: Long,
+    @Schematic.description("MIME type of the object")
     mimeType: Option[String] = None,
+    @Schematic.description("Content type (same as MIME type)")
     contentType: Option[String] = None,
+    @Schematic.description("When the object was first stored")
     createdAt: Instant,
+    @Schematic.description("Last time the object was modified")
     lastModified: Instant,
+    @Schematic.description("SHA-256 checksum of the file content")
+    @Schematic.pattern("^[a-fA-F0-9]{64}$")
     checksum: Option[String] = None,
+    @Schematic.description("ETag for cache validation")
     etag: Option[String] = None,
+    @Schematic.description("Additional user-defined metadata")
     metadata: Map[String, String] = Map.empty
-)
+) derives Schematic, ReadWriter
 
 object StoredObject {
   import Picklers.given
-
-  given rw: ReadWriter[StoredObject] = macroRW
 
   def toJson(obj: StoredObject): String = write(obj)
 

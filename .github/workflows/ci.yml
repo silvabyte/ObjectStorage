@@ -36,13 +36,13 @@ jobs:
             ${{ runner.os }}-mill-
 
       - name: Compile
-        run: ./mill ObjectStorage.compile
+        run: mill ObjectStorage.compile
 
       - name: Run tests
-        run: ./mill ObjectStorage.test
+        run: mill ObjectStorage.test
 
       - name: Check formatting
-        run: ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+        run: mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
         continue-on-error: true
 
   docker:
@@ -65,7 +65,7 @@ jobs:
           mill-version: 0.12.3
 
       - name: Build assembly
-        run: ./mill ObjectStorage.assembly
+        run: mill ObjectStorage.assembly
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

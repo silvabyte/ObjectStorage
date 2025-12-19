@@ -8,18 +8,6 @@ import upickle.default.{read, write, ReadWriter}
 import objectstorage.logging.Log
 import objectstorage.config.AppError
 
-/** Context for a file lock, including process ID and expiration */
-case class LockContext(
-    processId: String,
-    createdAt: Instant,
-    timeoutSeconds: Int = 30
-) {
-  def isExpired: Boolean = {
-    val expiredAt = createdAt.plusSeconds(timeoutSeconds)
-    Instant.now.isAfter(expiredAt)
-  }
-}
-
 object LockContext {
   given instantRW: ReadWriter[Instant] = {
     upickle.default.readwriter[String].bimap[Instant](
@@ -27,7 +15,18 @@ object LockContext {
       str => Instant.parse(str)
     )
   }
-  given rw: ReadWriter[LockContext] = upickle.default.macroRW[LockContext]
+}
+
+/** Context for a file lock, including process ID and expiration */
+case class LockContext(
+    processId: String,
+    createdAt: Instant,
+    timeoutSeconds: Int = 30
+) derives ReadWriter {
+  def isExpired: Boolean = {
+    val expiredAt = createdAt.plusSeconds(timeoutSeconds)
+    Instant.now.isAfter(expiredAt)
+  }
 }
 
 /** Context identifying a file for locking purposes */
