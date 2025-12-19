@@ -17,8 +17,8 @@ object ObjectStorage extends ScalaModule {
     // Logging
     ivy"com.outr::scribe:3.6.6",
     // BoogieLoops schema + web for OpenAPI generation and validation
-    ivy"dev.boogieloop::schema:0.5.1",
-    ivy"dev.boogieloop::web:0.5.1"
+    ivy"dev.boogieloop::schema:0.5.3",
+    ivy"dev.boogieloop::web:0.5.3"
   )
 
   def mainClass = Some("objectstorage.ObjectStorageApp")

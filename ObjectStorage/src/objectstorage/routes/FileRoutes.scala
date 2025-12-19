@@ -26,15 +26,10 @@ case class FileRoutes() extends cask.Routes {
   // Helper Methods
   // ============================================================================
 
-  /** Extract tenant and user IDs from request headers.
-    *
-    * Note: We use the original request headers directly because BoogieLoops' validated headers
-    * have a bug where string values are JSON-encoded (e.g., "value" becomes "\"value\"").
-    * The schema validation still runs and will reject requests with missing headers.
-    */
+  /** Extract tenant and user IDs from validated request headers. */
   private def extractTenantUser(r: ValidatedRequest): Either[Response[String], (String, String)] = {
-    val tenantId = r.original.headers.get("x-tenant-id").flatMap(_.headOption)
-    val userId = r.original.headers.get("x-user-id").flatMap(_.headOption)
+    val tenantId = r.getHeader("x-tenant-id")
+    val userId = r.getHeader("x-user-id")
 
     (tenantId, userId) match {
       case (Some(tid), Some(uid)) => Right((tid, uid))
