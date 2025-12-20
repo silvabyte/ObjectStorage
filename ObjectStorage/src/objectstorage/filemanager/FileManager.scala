@@ -23,10 +23,11 @@ case class ObjectOperationResult(storedObject: StoredObject, status: ObjectOpera
 /** Result of listing objects */
 case class ObjectListResult(objects: Vector[StoredObject], status: ObjectOperationResultStatus)
 
-/** Core file management operations for object storage.
-  *
-  * Handles file upload, download, delete, and metadata management with checksum-based deduplication.
-  */
+/**
+ * Core file management operations for object storage.
+ *
+ * Handles file upload, download, delete, and metadata management with checksum-based deduplication.
+ */
 object FileManager {
   // Base directory for storage (simulating a bucket system)
   private val storagePath = os.pwd / "bucket"
@@ -410,7 +411,9 @@ object FileManager {
         Log.error(s"Could not load metadata for objectId $objectId", context)
         Left("Could not load file metadata")
       case Some(existingObject) =>
+
         val tempFile = os.temp()
+
         writeFileSafe(tempFile, stream) match {
           case Left(error) =>
             Log.error(s"Failed to write stream to temp file: ${error.message}", context)
@@ -462,51 +465,6 @@ object FileManager {
     folder
   }
 
-  /** Migrate files from old path pattern to new object ID-based system */
-  def migrateFiles(tenantId: String, userId: String): Either[String, Unit] = {
-    val folder = buildFolderPath(tenantId, userId)
-    val backupFolder = folder / "backup"
-    val files = os.list(folder).filter(f => os.isFile(f) && f.last.endsWith(".wav"))
-
-    os.makeDir.all(backupFolder)
-    files.foreach { file =>
-      val backupFile = backupFolder / file.last
-      os.copy(file, backupFile)
-    }
-
-    val backupFiles = os.list(backupFolder)
-    if (backupFiles.isEmpty || backupFiles.length != files.length) {
-      Log.error(s"Failed to backup migrate files", Map("tenantId" -> tenantId, "userId" -> userId))
-      Log.info("Aborting migration")
-      Left("Failed to backup migrate files")
-    } else {
-      val lookup = loadLookup(tenantId, userId)
-      files.foreach { file =>
-        val newObjectId = getUniqueId(lookup)
-        val newContentFilePath = folder / newObjectId.toString
-        val newMetadataFilePath = folder / s"${newObjectId.toString}.json"
-        os.copy(file, newContentFilePath)
-        val newStoredObject = StoredObject(
-          objectId = newObjectId,
-          bucket = bucketPath.toString,
-          fileName = file.last,
-          size = os.size(file),
-          mimeType = Some("audio/wav"),
-          contentType = Some("audio/wav"),
-          createdAt = Instant.now,
-          lastModified = Instant.now,
-          checksum = Some(computeChecksum(newContentFilePath)),
-          etag = None,
-          metadata = Map.empty
-        )
-        writeFileSafe(newMetadataFilePath, StoredObject.toJson(newStoredObject))
-      }
-
-      Log.info(s"Files migrated successfully")
-      Log.info(s"You can safely delete the backup folder ${backupFolder.toString}")
-      Right(())
-    }
-  }
 }
 
 /** File validation utilities */
@@ -516,8 +474,8 @@ object FileValidator {
       case None => Left("File validation failed: missing form file")
       case Some(f) =>
         (validateFileName(Option(f.fileName)), validateFilePath(f.filePath)) match {
-          case (Left(error), _)          => Left(error)
-          case (_, Left(error))          => Left(error)
+          case (Left(error), _) => Left(error)
+          case (_, Left(error)) => Left(error)
           case (Right(_), Right(path)) => Right(path)
         }
     }
@@ -537,7 +495,7 @@ object FileValidator {
       case Some(p) =>
         val resolvedPath = os.Path(p)
         Try(os.exists(resolvedPath)) match {
-          case Success(_)   => Right(resolvedPath)
+          case Success(_) => Right(resolvedPath)
           case Failure(e) => Left(e.getMessage)
         }
       case None => Left("File validation failed: missing file path")

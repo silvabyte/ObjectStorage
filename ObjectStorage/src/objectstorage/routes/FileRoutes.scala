@@ -421,39 +421,5 @@ case class FileRoutes() extends cask.Routes {
     }
   }
 
-  // ============================================================================
-  // Admin Endpoints
-  // ============================================================================
-
-  /** Migrate files from old path pattern to new object ID-based system */
-  @Web.post(
-    s"$apiPrefix/files/migrate",
-    RouteSchema(
-      summary = Some("Migrate files"),
-      description = Some("Migrate files from old path pattern to new object ID-based system"),
-      tags = List("Admin"),
-      headers = Some(Schematic[TenantHeaders]),
-      responses = Map(
-        200 -> ApiResponse("Files migrated successfully", Schematic[SuccessResponse]),
-        400 -> ApiResponse("Migration failed", Schematic[ErrorResponse])
-      )
-    )
-  )
-  def migrateFiles(r: ValidatedRequest): Response[String] = {
-    extractTenantUser(r) match {
-      case Left(errorResponse) => errorResponse
-      case Right((tenantId, userId)) =>
-        FileManager.migrateFiles(tenantId, userId) match {
-          case Right(_) =>
-            Response(
-              write(SuccessResponse("Files migrated successfully")),
-              200,
-              Seq("Content-Type" -> "application/json")
-            )
-          case Left(error) => createErrorResponse(error, "error", 400)
-        }
-    }
-  }
-
   initialize()
 }
