@@ -43,7 +43,11 @@ jobs:
 
       - name: Check formatting
         run: mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-        continue-on-error: true
+
+      - name: Lint (Scalafix)
+        run: |
+          mill ObjectStorage.fixCheck
+          mill ObjectStorage.test.fixCheck
 
   docker:
     runs-on: ubuntu-latest

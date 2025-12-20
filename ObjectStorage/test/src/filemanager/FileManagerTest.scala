@@ -51,8 +51,8 @@ object FileManagerTest extends TestSuite {
 
       test("with different buffer sizes") {
         val temp = createTempFileWithSize(1024 * 1024) // 1MB file
-        val checksum1 = FileManager.computeChecksum(temp, 1024)  // 1KB buffer
-        val checksum2 = FileManager.computeChecksum(temp, 8192)  // 8KB buffer
+        val checksum1 = FileManager.computeChecksum(temp, 1024) // 1KB buffer
+        val checksum2 = FileManager.computeChecksum(temp, 8192) // 8KB buffer
         val checksum3 = FileManager.computeChecksum(temp, 32768) // 32KB buffer
         assert(checksum1 == checksum2)
         assert(checksum2 == checksum3)

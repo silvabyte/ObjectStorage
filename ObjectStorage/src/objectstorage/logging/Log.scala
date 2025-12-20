@@ -7,11 +7,12 @@ import ujson._
 import java.time.Instant
 import objectstorage.config.Config
 
-/** JSON-formatted log writer for structured logging.
-  *
-  * Outputs logs as JSON objects with timestamp, level, message, source location, and custom data.
-  * Supports pretty-printing with colors for development.
-  */
+/**
+ * JSON-formatted log writer for structured logging.
+ *
+ * Outputs logs as JSON objects with timestamp, level, message, source location, and custom data.
+ * Supports pretty-printing with colors for development.
+ */
 class JsonWriter(pretty: Boolean = false) extends Writer {
   private val base64DataUrlPattern = """^data:[^;]+;base64,(.+)$""".r
   private val maxBase64Length = 100
@@ -63,8 +64,8 @@ class JsonWriter(pretty: Boolean = false) extends Writer {
       case ujson.Arr(arr) =>
         val coloredArr = arr.map(colorize(_, level)).mkString("[", ", ", "]")
         coloredArr
-      case ujson.Str(value)  => s"$valueColor\"$value\"${Console.RESET}"
-      case ujson.Num(value)  => s"${Console.CYAN}$value${Console.RESET}"
+      case ujson.Str(value) => s"$valueColor\"$value\"${Console.RESET}"
+      case ujson.Num(value) => s"${Console.CYAN}$value${Console.RESET}"
       case ujson.Bool(value) =>
         if (value) s"${Console.MAGENTA}true${Console.RESET}"
         else s"${Console.MAGENTA}false${Console.RESET}"
@@ -78,24 +79,24 @@ class JsonWriter(pretty: Boolean = false) extends Writer {
       outputFormat: OutputFormat
   ): Unit = {
     val json = Obj(
-      "timestamp"  -> Option(record.timeStamp).map(_.toString).getOrElse(""),
-      "level"      -> Option(record.level).map(_.name).getOrElse("INFO"),
-      "message"    -> Option(record.message.value).map(_.toString).getOrElse(""),
-      "fileName"   -> Option(record.fileName).getOrElse(""),
-      "className"  -> Option(record.className).getOrElse(""),
+      "timestamp" -> Option(record.timeStamp).map(_.toString).getOrElse(""),
+      "level" -> Option(record.level).map(_.name).getOrElse("INFO"),
+      "message" -> Option(record.message.value).map(_.toString).getOrElse(""),
+      "fileName" -> Option(record.fileName).getOrElse(""),
+      "className" -> Option(record.className).getOrElse(""),
       "methodName" -> record.methodName.getOrElse(""),
-      "line"       -> record.line.getOrElse(-1),
-      "thread"     -> Option(record.thread).map(_.getName).getOrElse(""),
+      "line" -> record.line.getOrElse(-1),
+      "thread" -> Option(record.thread).map(_.getName).getOrElse(""),
       "data" -> Obj.from(
         record.data.map { case (k, v) =>
           k -> Option(v())
             .map {
               case s: String => ujson.Str(s)
-              case i: Int    => ujson.Num(i)
-              case l: Long   => ujson.Num(l)
+              case i: Int => ujson.Num(i)
+              case l: Long => ujson.Num(l)
               case d: Double => ujson.Num(d)
               case b: Boolean => ujson.Bool(b)
-              case other     => ujson.Str(other.toString)
+              case other => ujson.Str(other.toString)
             }
             .getOrElse(ujson.Null)
         }
@@ -105,9 +106,10 @@ class JsonWriter(pretty: Boolean = false) extends Writer {
     val sanitizedJson = sanitizeValue(json)
 
     try {
-      val outputStr =
+      val outputStr = {
         if (pretty) colorize(sanitizedJson, sanitizedJson("level").str)
         else ujson.write(sanitizedJson)
+      }
       println(outputStr)
     } catch {
       case ex: Exception =>
@@ -116,16 +118,17 @@ class JsonWriter(pretty: Boolean = false) extends Writer {
   }
 }
 
-/** Structured JSON logging utility.
-  *
-  * Provides a simple API for logging with structured data, similar to pino in Node.js.
-  *
-  * Usage:
-  * {{{
-  * Log.info("User logged in", Map("userId" -> "123", "ip" -> "192.168.1.1"))
-  * Log.error("Failed to process request", Map("error" -> ex.getMessage))
-  * }}}
-  */
+/**
+ * Structured JSON logging utility.
+ *
+ * Provides a simple API for logging with structured data, similar to pino in Node.js.
+ *
+ * Usage:
+ * {{{
+ * Log.info("User logged in", Map("userId" -> "123", "ip" -> "192.168.1.1"))
+ * Log.error("Failed to process request", Map("error" -> ex.getMessage))
+ * }}}
+ */
 object Log {
   // Lazy initialization to allow Config to be set up first
   private lazy val jsonWriter = JsonWriter(pretty = Config.LOG_PRETTY)

@@ -57,7 +57,7 @@ object FileLockManagerTest extends TestSuite {
           case Success(existingLock) if existingLock.isExpired =>
             Try(os.remove(lockPath))
           case Success(_) =>
-            // Lock exists and is not expired - will fail below
+          // Lock exists and is not expired - will fail below
           case Failure(_) =>
             Try(os.remove(lockPath))
         }
@@ -156,7 +156,7 @@ object FileLockManagerTest extends TestSuite {
         val now = Instant.now
 
         val expiredLock = LockContext(processId, fortySecondsAgo, 30) // 30 second timeout
-        val activeLock = LockContext(processId, now, 30)              // 30 second timeout
+        val activeLock = LockContext(processId, now, 30) // 30 second timeout
 
         assert(expiredLock.isExpired)
         assert(!activeLock.isExpired)
@@ -386,8 +386,8 @@ object FileLockManagerTest extends TestSuite {
 
         results.foreach {
           case Success(Right(_)) => successCount += 1
-          case Success(Left(_))  => failureCount += 1
-          case Failure(_)        => failureCount += 1
+          case Success(Left(_)) => failureCount += 1
+          case Failure(_) => failureCount += 1
         }
 
         // At least one should succeed, and there should be some failures due to lock conflicts

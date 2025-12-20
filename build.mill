@@ -1,8 +1,9 @@
 package build
 
 import mill._, scalalib._
+import mill.scalalib.scalafmt.ScalafmtModule
 
-object ObjectStorage extends ScalaModule {
+object ObjectStorage extends ScalaModule with ScalafmtModule {
   def scalaVersion = "3.7.2"
 
   def ivyDeps = Agg(
@@ -23,7 +24,62 @@ object ObjectStorage extends ScalaModule {
 
   def mainClass = Some("objectstorage.ObjectStorageApp")
 
-  object test extends ScalaTests {
+  // Scalafix configuration
+  private def scalafixConfig = millSourcePath / os.up / ".scalafix.conf"
+
+  private def sourceFiles: Seq[String] = {
+    val srcDir = millSourcePath / "src"
+    if (os.exists(srcDir)) {
+      os.walk(srcDir)
+        .filter(_.ext == "scala")
+        .map(_.toString)
+    } else {
+      Seq.empty
+    }
+  }
+
+  /** Run Scalafix to auto-fix linting issues */
+  def fix() = Task.Command {
+    val files = sourceFiles
+    if (files.nonEmpty) {
+      os.proc(
+        "cs",
+        "launch",
+        "scalafix",
+        "--",
+        "--config",
+        scalafixConfig.toString,
+        "--scala-version",
+        scalaVersion(),
+        "--syntactic",
+        files
+      ).call(cwd = millSourcePath / os.up)
+    }
+    ()
+  }
+
+  /** Check Scalafix rules without making changes */
+  def fixCheck() = Task.Command {
+    val files = sourceFiles
+    if (files.nonEmpty) {
+      os.proc(
+        "cs",
+        "launch",
+        "scalafix",
+        "--",
+        "--config",
+        scalafixConfig.toString,
+        "--scala-version",
+        scalaVersion(),
+        "--syntactic",
+        "--check",
+        files
+      ).call(cwd = millSourcePath / os.up)
+    }
+    ()
+  }
+
+  object test extends ScalaTests with ScalafmtModule {
     def ivyDeps = Agg(
       ivy"com.lihaoyi::utest:0.8.5",
       ivy"org.scalamock::scalamock:7.1.0",
@@ -36,6 +92,57 @@ object ObjectStorage extends ScalaModule {
     // Include test resources
     def resources = Task.Sources {
       super.resources() ++ Seq(PathRef(millSourcePath / "resources"))
+    }
+
+    // Scalafix for test sources
+    private def testSourceFiles: Seq[String] = {
+      val srcDir = millSourcePath / "src"
+      if (os.exists(srcDir)) {
+        os.walk(srcDir)
+          .filter(_.ext == "scala")
+          .map(_.toString)
+      } else {
+        Seq.empty
+      }
+    }
+
+    def fix() = Task.Command {
+      val files = testSourceFiles
+      if (files.nonEmpty) {
+        os.proc(
+          "cs",
+          "launch",
+          "scalafix",
+          "--",
+          "--config",
+          (millSourcePath / os.up / os.up / ".scalafix.conf").toString,
+          "--scala-version",
+          ObjectStorage.scalaVersion(),
+          "--syntactic",
+          files
+        ).call(cwd = millSourcePath / os.up / os.up)
+      }
+      ()
+    }
+
+    def fixCheck() = Task.Command {
+      val files = testSourceFiles
+      if (files.nonEmpty) {
+        os.proc(
+          "cs",
+          "launch",
+          "scalafix",
+          "--",
+          "--config",
+          (millSourcePath / os.up / os.up / ".scalafix.conf").toString,
+          "--scala-version",
+          ObjectStorage.scalaVersion(),
+          "--syntactic",
+          "--check",
+          files
+        ).call(cwd = millSourcePath / os.up / os.up)
+      }
+      ()
     }
   }
 }

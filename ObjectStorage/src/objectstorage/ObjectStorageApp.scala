@@ -7,10 +7,11 @@ import objectstorage.decorators.Decorators._
 import cask._
 import java.util.concurrent.atomic.AtomicReference
 
-/** ObjectStorage application entry point.
-  *
-  * A standalone object storage service with multi-tenant file management.
-  */
+/**
+ * ObjectStorage application entry point.
+ *
+ * A standalone object storage service with multi-tenant file management.
+ */
 object ObjectStorageApp extends cask.Main {
   // Initialize configuration from environment
   private val envDirectory: String = sys.env.getOrElse("ENV_DIR", os.pwd.toString)

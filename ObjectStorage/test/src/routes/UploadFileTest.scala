@@ -26,9 +26,9 @@ object UploadFileTest extends TestSuite {
             file,
             Map(
               "X-Tenant-Id" -> tenantId,
-              "X-User-Id"   -> userId,
+              "X-User-Id" -> userId,
               "x-file-name" -> fileName,
-              "x-mimetype"  -> "audio/wav"
+              "x-mimetype" -> "audio/wav"
             )
           )
           .getOrElse(throw new Exception("Failed to upload file"))
@@ -49,9 +49,9 @@ object UploadFileTest extends TestSuite {
             file,
             Map(
               "X-Tenant-Id" -> tenantId,
-              "X-User-Id"   -> userId,
+              "X-User-Id" -> userId,
               "x-file-name" -> fileName,
-              "x-mimetype"  -> "audio/wav"
+              "x-mimetype" -> "audio/wav"
             )
           ) match {
             case Left(e) =>

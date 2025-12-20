@@ -25,31 +25,32 @@ object Picklers {
     Schematic.instance(bl.String(format = Some("date-time")))
 }
 
-/** Represents a stored file object with metadata.
-  *
-  * @param objectId
-  *   Unique identifier for the object as a UUID
-  * @param bucket
-  *   The bucket or container name (typically tenant/user path)
-  * @param fileName
-  *   Original file name (for reference)
-  * @param size
-  *   Size in bytes
-  * @param mimeType
-  *   MIME type of the object (e.g., "image/png", "application/pdf")
-  * @param contentType
-  *   Content type (same as MIME type, for compatibility)
-  * @param createdAt
-  *   When the object was first stored
-  * @param lastModified
-  *   Last time the object was modified
-  * @param checksum
-  *   SHA-256 checksum of the file content
-  * @param etag
-  *   Optional ETag for cache validation and integrity checks
-  * @param metadata
-  *   Additional user-defined metadata
-  */
+/**
+ * Represents a stored file object with metadata.
+ *
+ * @param objectId
+ *   Unique identifier for the object as a UUID
+ * @param bucket
+ *   The bucket or container name (typically tenant/user path)
+ * @param fileName
+ *   Original file name (for reference)
+ * @param size
+ *   Size in bytes
+ * @param mimeType
+ *   MIME type of the object (e.g., "image/png", "application/pdf")
+ * @param contentType
+ *   Content type (same as MIME type, for compatibility)
+ * @param createdAt
+ *   When the object was first stored
+ * @param lastModified
+ *   Last time the object was modified
+ * @param checksum
+ *   SHA-256 checksum of the file content
+ * @param etag
+ *   Optional ETag for cache validation and integrity checks
+ * @param metadata
+ *   Additional user-defined metadata
+ */
 @Schematic.title("StoredObject")
 @Schematic.description("Metadata about a stored file object")
 case class StoredObject(

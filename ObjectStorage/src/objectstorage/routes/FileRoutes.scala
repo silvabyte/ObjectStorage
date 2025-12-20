@@ -13,11 +13,12 @@ import boogieloops.schema.derivation.Schematic
 import boogieloops.schema.bl
 import io.undertow.server.handlers.form.FormParserFactory
 
-/** REST API routes for file operations.
-  *
-  * Provides endpoints for upload, download, list, delete, and metadata operations. All file operations require
-  * x-tenant-id and x-user-id headers which are validated via schema.
-  */
+/**
+ * REST API routes for file operations.
+ *
+ * Provides endpoints for upload, download, list, delete, and metadata operations. All file operations require
+ * x-tenant-id and x-user-id headers which are validated via schema.
+ */
 case class FileRoutes() extends cask.Routes {
 
   def apiPrefix = "/api/v1"
@@ -126,7 +127,7 @@ case class FileRoutes() extends cask.Routes {
           case Success(uuid) =>
             FileManager.getStoredObject(tenantId, userId, uuid) match {
               case Some(storedObject) => createFileStatResponse(storedObject)
-              case None               => createErrorResponse(s"File $objectId not found", "error", 404)
+              case None => createErrorResponse(s"File $objectId not found", "error", 404)
             }
         }
     }
@@ -295,7 +296,7 @@ case class FileRoutes() extends cask.Routes {
           case Success(uuid) =>
             FileManager.deleteFile(tenantId, userId, uuid) match {
               case Some(storedObject) => createFileStatResponse(storedObject, 200)
-              case None               => createErrorResponse(s"File $objectId not found", "error", 404)
+              case None => createErrorResponse(s"File $objectId not found", "error", 404)
             }
         }
     }
@@ -326,7 +327,7 @@ case class FileRoutes() extends cask.Routes {
       case Right((tenantId, userId)) =>
         FileManager.lookupByChecksum(tenantId, userId, checksum) match {
           case Some(storedObject) => createFileStatResponse(storedObject, 200)
-          case None               => createErrorResponse("File not found", "not_found", 404)
+          case None => createErrorResponse("File not found", "not_found", 404)
         }
     }
   }

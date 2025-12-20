@@ -8,10 +8,11 @@ import requests._
 import java.util.UUID
 import upickle.default._
 
-/** HTTP client for ObjectStorage API.
-  *
-  * Provides methods for file upload, download, list, delete, and metadata operations.
-  */
+/**
+ * HTTP client for ObjectStorage API.
+ *
+ * Provides methods for file upload, download, list, delete, and metadata operations.
+ */
 trait ObjectStorageApi {
   def listFiles(headers: Map[String, String] = Map.empty)(implicit
       checked: Boolean = true
@@ -40,11 +41,12 @@ trait ObjectStorageApi {
   ): Either[AppError, Unit]
 }
 
-/** Default implementation of ObjectStorageApi using HTTP requests.
-  *
-  * @param objectStorageUrl
-  *   Base URL of the ObjectStorage service (e.g., "http://localhost:8080")
-  */
+/**
+ * Default implementation of ObjectStorageApi using HTTP requests.
+ *
+ * @param objectStorageUrl
+ *   Base URL of the ObjectStorage service (e.g., "http://localhost:8080")
+ */
 case class ObjectStorageClient(objectStorageUrl: String) extends ObjectStorageApi {
   val baseUrl = s"${objectStorageUrl}/api/v1/files"
 

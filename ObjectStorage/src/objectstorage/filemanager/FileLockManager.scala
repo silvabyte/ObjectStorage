@@ -57,10 +57,11 @@ object FileLockManager {
     os.makeDir.all(lockBasePath)
   }
 
-  /** Attempt to acquire a lock for the given file context.
-    * 
-    * Self-healing: automatically removes expired or corrupted locks before acquiring.
-    */
+  /**
+   * Attempt to acquire a lock for the given file context.
+   *
+   * Self-healing: automatically removes expired or corrupted locks before acquiring.
+   */
   def tryLock(fileContext: FileContext): Either[String, LockContext] = {
     val lockPath = fileContext.lockPath(lockBasePath)
     val lockDir = lockPath / os.up
@@ -92,7 +93,7 @@ object FileLockManager {
           )
           Try(os.remove(lockPath))
         case Success(_) =>
-          // Lock exists and is not expired - will fail below
+        // Lock exists and is not expired - will fail below
         case Failure(_) =>
           Log.info(s"Found corrupted lock file, removing", context)
           Try(os.remove(lockPath))

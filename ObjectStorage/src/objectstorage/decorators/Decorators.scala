@@ -5,24 +5,26 @@ import cask.model.{Request, Response}
 import cask.router.Result
 import objectstorage.logging.Log
 
-/** Cask middleware decorators for request/response handling.
-  *
-  * Note: Header validation (x-tenant-id, x-user-id) is now handled via BoogieLoops schema validation in RouteSchema.headers.
-  * The withUserIdAndTenantId decorator has been removed in favor of schema-based validation.
-  */
+/**
+ * Cask middleware decorators for request/response handling.
+ *
+ * Note: Header validation (x-tenant-id, x-user-id) is now handled via BoogieLoops schema validation in RouteSchema.headers.
+ * The withUserIdAndTenantId decorator has been removed in favor of schema-based validation.
+ */
 object Decorators {
 
-  /** Logs request and response details including timing, status, and errors.
-    *
-    * This decorator can be stacked with @Web.* annotations to add request logging.
-    *
-    * Example usage:
-    * {{{
-    * @withResponseLog
-    * @Web.get("/api/v1/files", RouteSchema(...))
-    * def listFiles(r: ValidatedRequest): Response[String] = ...
-    * }}}
-    */
+  /**
+   * Logs request and response details including timing, status, and errors.
+   *
+   * This decorator can be stacked with @Web.* annotations to add request logging.
+   *
+   * Example usage:
+   * {{{
+   * @withResponseLog
+   * @Web.get("/api/v1/files", RouteSchema(...))
+   * def listFiles(r: ValidatedRequest): Response[String] = ...
+   * }}}
+   */
   class withResponseLog extends cask.RawDecorator {
 
     def wrapFunction(request: cask.Request, delegate: Delegate): Result[Raw] = {
@@ -32,17 +34,17 @@ object Decorators {
       val responseTimeMillis = responseTimeNanos / 1000000.0
 
       val baseMeta = Map(
-        "url.path"            -> request.exchange.getRequestPath,
-        "url.query"           -> request.exchange.getQueryString,
-        "url.full"            -> request.exchange.getRequestURL,
-        "client.ip"           -> request.exchange.getSourceAddress.getAddress.getAddress.toString,
-        "client.port"         -> request.exchange.getSourceAddress.getPort,
+        "url.path" -> request.exchange.getRequestPath,
+        "url.query" -> request.exchange.getQueryString,
+        "url.full" -> request.exchange.getRequestURL,
+        "client.ip" -> request.exchange.getSourceAddress.getAddress.getAddress.toString,
+        "client.port" -> request.exchange.getSourceAddress.getPort,
         "user_agent.original" -> request.exchange.getRequestHeaders.getFirst("user-agent"),
-        "request.method"      -> request.exchange.getRequestMethod,
-        "request.id"          -> request.exchange.getRequestId,
-        "request-id"          -> request.exchange.getRequestHeaders.getFirst("request-id"),
-        "x-tenant-id"         -> request.exchange.getRequestHeaders.getFirst("x-tenant-id"),
-        "x-user-id"           -> request.exchange.getRequestHeaders.getFirst("x-user-id"),
+        "request.method" -> request.exchange.getRequestMethod,
+        "request.id" -> request.exchange.getRequestId,
+        "request-id" -> request.exchange.getRequestHeaders.getFirst("request-id"),
+        "x-tenant-id" -> request.exchange.getRequestHeaders.getFirst("x-tenant-id"),
+        "x-user-id" -> request.exchange.getRequestHeaders.getFirst("x-user-id"),
         "request.body.bytes" -> Option(
           request.exchange.getRequestHeaders.getFirst("content-length")
         ).flatMap(_.toIntOption).getOrElse(0),

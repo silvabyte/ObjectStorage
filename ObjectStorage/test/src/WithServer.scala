@@ -12,10 +12,11 @@ import objectstorage.client.ObjectStorageClient
 import objectstorage.routes.{FileRoutes, IndexRoutes}
 import objectstorage.filemanager.FileManager
 
-/** Test server harness for integration tests.
-  *
-  * Provides utilities for starting/stopping the ObjectStorage server and staging test files.
-  */
+/**
+ * Test server harness for integration tests.
+ *
+ * Provides utilities for starting/stopping the ObjectStorage server and staging test files.
+ */
 object TestServer {
 
   val routes = Seq(new IndexRoutes(), new FileRoutes())
@@ -95,7 +96,7 @@ object TestServer {
       Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId)
     ) match {
       case Right(Some(so)) => Some(so)
-      case _               => None
+      case _ => None
     }
   }
 
@@ -120,13 +121,13 @@ object TestServer {
           file,
           Map(
             "X-Tenant-Id" -> tenantId,
-            "X-User-Id"   -> userId,
+            "X-User-Id" -> userId,
             "x-file-name" -> fileName,
-            "x-mimetype"  -> "audio/wav"
+            "x-mimetype" -> "audio/wav"
           )
         ) match {
           case Right(so) => so
-          case Left(e)   => throw e
+          case Left(e) => throw e
         }
     }
   }

@@ -13,15 +13,16 @@ case class DotEnv(env: mutable.Map[String, String]) {
 
 object DotEnv {
 
-  /** Load environment variables from a .env file.
-    *
-    * @param filePath
-    *   Path to the .env file. Defaults to ".env" in the current directory.
-    * @param overrideExisting
-    *   If true, existing environment variables will be overridden.
-    * @return
-    *   A DotEnv instance with all loaded key-value pairs.
-    */
+  /**
+   * Load environment variables from a .env file.
+   *
+   * @param filePath
+   *   Path to the .env file. Defaults to ".env" in the current directory.
+   * @param overrideExisting
+   *   If true, existing environment variables will be overridden.
+   * @return
+   *   A DotEnv instance with all loaded key-value pairs.
+   */
   def load(filePath: String = ".env", overrideExisting: Boolean = true): DotEnv = {
     val lines: Seq[String] = scala.util.Try(os.read.lines(os.Path(filePath))).getOrElse(Seq.empty)
     val env = lines.map(parseLine).foldLeft(Map[String, String]()) {
