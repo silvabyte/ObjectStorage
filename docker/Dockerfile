@@ -4,6 +4,9 @@
 # Build stage (optional - use if building from source)
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
+# Install curl for mill wrapper script
+RUN apk add --no-cache curl
+
 WORKDIR /build
 
 # Copy mill wrapper and build files
