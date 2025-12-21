@@ -53,11 +53,13 @@ object StoredObjectTest extends TestSuite {
         checksum = Some("sha256hash")
       )
 
-      assert(obj.objectId != null)
+      // Verify UUID was generated (non-zero, valid format)
+      assert(obj.objectId.toString.nonEmpty)
       assert(obj.bucket == "my-bucket")
       assert(obj.fileName == "file.pdf")
       assert(obj.size == 2048L)
-      assert(obj.createdAt != null)
+      // Verify timestamp was generated
+      assert(obj.createdAt.toEpochMilli > 0)
       assert(obj.lastModified == obj.createdAt)
       assert(obj.etag == Some("\"sha256hash\""))
     }

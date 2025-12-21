@@ -18,11 +18,9 @@ object ListFilesTest extends TestSuite {
         val userId = "5678"
         val fileName = "gain_audio_20250112_090406.wav"
         val storedObject = stageFile(tenantId, userId, fileName).objectId
-        val objs = {
-          getObjectStorageApi()
-            .listFiles(Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId))
-            .getOrElse(throw new Exception("Failed to list files"))
-        }
+        val objs = getObjectStorageApi()
+          .listFiles(Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId))
+          .fold(e => sys.error(e.getMessage), identity)
         assert(objs.length > 0)
         assert(objs.map(_.objectId).contains(storedObject))
       }

@@ -33,7 +33,7 @@ object DownloadFileTest extends TestSuite {
           case Right(_) =>
             // Assert that the file was downloaded.
             assert(os.exists(os.Path(destination.toString)))
-          case Left(e) => throw e
+          case Left(e) => sys.error(e.getMessage)
       }
     }
   }

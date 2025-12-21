@@ -58,3 +58,6 @@ logs/
 
 # Docker
 .docker/
+
+.opencode/streams
+.opencode/streams.lock

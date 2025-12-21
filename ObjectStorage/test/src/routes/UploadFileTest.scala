@@ -21,7 +21,7 @@ object UploadFileTest extends TestSuite {
     test("Upload file successfully") {
       withServer { host =>
         val file = os.read.stream(os.resource / "test" / fileName)
-        val obj = getObjectStorageApi()
+        getObjectStorageApi()
           .uploadFile(
             file,
             Map(
@@ -30,13 +30,15 @@ object UploadFileTest extends TestSuite {
               "x-file-name" -> fileName,
               "x-mimetype" -> "audio/wav"
             )
-          )
-          .getOrElse(throw new Exception("Failed to upload file"))
-
-        assert(obj.fileName == fileName)
-        assert(obj.objectId != null)
-        assert(obj.bucket != null)
-        assert(obj.mimeType == Some("audio/wav"))
+          ) match {
+          case Left(e) =>
+            sys.error(s"Failed to upload file: ${e.getMessage}")
+          case Right(obj) =>
+            assert(obj.fileName == fileName)
+            assert(obj.objectId.toString.nonEmpty)
+            assert(obj.bucket.nonEmpty)
+            assert(obj.mimeType == Some("audio/wav"))
+        }
       }
       test("Uploading a duplicate file should return 304 status code and the stored object") {
         withServer { host =>
@@ -55,15 +57,14 @@ object UploadFileTest extends TestSuite {
             )
           ) match {
             case Left(e) =>
-              println(s"Error: $e")
-              throw new Exception("Expected upload file to succeed")
+              sys.error(s"Expected upload file to succeed: ${e.getMessage}")
             case Right(obj) =>
               assert(obj.fileName == fileName)
-              assert(obj.objectId != null)
-              assert(obj.bucket != null)
+              assert(obj.objectId.toString.nonEmpty)
+              assert(obj.bucket.nonEmpty)
               assert(obj.mimeType == Some("audio/wav"))
             case _ =>
-              throw new Exception("well what have we here upload file to succeed")
+              sys.error("Unexpected match case in upload file test")
           }
         }
       }

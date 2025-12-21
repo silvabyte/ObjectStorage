@@ -25,13 +25,14 @@ object GetFileMetaDataTest extends TestSuite {
 
         // Now get the file meta data:
         // GET /api/v1/files/metadata/:objectId
-        val obj = {
-          getObjectStorageApi()
-            .getFileMetadata(
-              storedObject.objectId,
-              Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId)
-            )
-            .getOrElse(throw new Exception("Failed to get file metadata"))
+        val obj = getObjectStorageApi()
+          .getFileMetadata(
+            storedObject.objectId,
+            Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId)
+          ) match {
+          case Right(obj) => obj
+          case Left(e) =>
+            sys.error(e.getMessage)
         }
         // Assert that the response is the expected stored object.
         assert(obj == storedObject)
@@ -50,7 +51,7 @@ object GetFileMetaDataTest extends TestSuite {
           case Left(e) =>
             assert(e == AppError("Failed to get file metadata: 404"))
           case Right(_) =>
-            throw new Exception("Expected get file metadata to fail")
+            sys.error("Expected get file metadata to fail")
         }
       }
     }

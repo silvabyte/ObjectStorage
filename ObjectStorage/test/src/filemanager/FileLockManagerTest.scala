@@ -5,6 +5,7 @@ import objectstorage.filemanager.{FileLockManager, FileContext, LockContext}
 import objectstorage.config.Config
 import java.util.UUID
 import java.time.Instant
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.util.{Try, Success, Failure}
 import scala.concurrent.{Future, ExecutionContext}
 import scala.concurrent.duration._
@@ -309,16 +310,16 @@ object FileLockManagerTest extends TestSuite {
       test("should execute operation with lock protection") {
         cleanupTestDirectory()
         val fileContext = createTestFileContext()
-        var operationExecuted = false
+        val operationExecuted = new AtomicBoolean(false)
 
         val result = TestFileLockManager.withLock(fileContext) {
-          operationExecuted = true
+          operationExecuted.set(true)
           Right("operation completed")
         }
 
         assert(result.isRight)
         assert(result.right.get == "operation completed")
-        assert(operationExecuted)
+        assert(operationExecuted.get())
 
         // Verify lock is released after operation
         val lockPath = fileContext.lockPath(TestFileLockManager.getLockBasePath)
@@ -366,8 +367,8 @@ object FileLockManagerTest extends TestSuite {
         cleanupTestDirectory()
         val fileContext = createTestFileContext()
         val numThreads = 5 // Reduced for more reliable testing
-        var successCount = 0
-        var failureCount = 0
+        val successCount = new AtomicInteger(0)
+        val failureCount = new AtomicInteger(0)
 
         val futures = (1 to numThreads).map { i =>
           Future {
@@ -385,15 +386,15 @@ object FileLockManagerTest extends TestSuite {
         }
 
         results.foreach {
-          case Success(Right(_)) => successCount += 1
-          case Success(Left(_)) => failureCount += 1
-          case Failure(_) => failureCount += 1
+          case Success(Right(_)) => successCount.incrementAndGet()
+          case Success(Left(_)) => failureCount.incrementAndGet()
+          case Failure(_) => failureCount.incrementAndGet()
         }
 
         // At least one should succeed, and there should be some failures due to lock conflicts
-        assert(successCount >= 1)
-        assert(failureCount >= 1)
-        assert(successCount + failureCount == numThreads)
+        assert(successCount.get() >= 1)
+        assert(failureCount.get() >= 1)
+        assert(successCount.get() + failureCount.get() == numThreads)
 
         // Verify no lock files remain
         val lockPath = fileContext.lockPath(TestFileLockManager.getLockBasePath)

@@ -3,6 +3,7 @@ package objectstorage.test
 import java.util.UUID
 import java.time.Instant
 import java.net.{ServerSocket, InetSocketAddress}
+import java.util.concurrent.atomic.AtomicReference
 import os._
 import io.undertow.Undertow
 import objectstorage.config.Config
@@ -24,9 +25,9 @@ object TestServer {
   // disable requests throwing an error for non 200 responses
   implicit val checked: Boolean = false
 
-  @volatile private var server: Option[Undertow] = None
-  @volatile private var currentPort: Option[Int] = None
-  @volatile private var objectStorageClient: Option[ObjectStorageClient] = None
+  private val server = new AtomicReference[Option[Undertow]](None)
+  private val currentPort = new AtomicReference[Option[Int]](None)
+  private val objectStorageClient = new AtomicReference[Option[ObjectStorageClient]](None)
 
   private def findAvailablePort(): Int = {
     val socket = new ServerSocket()
@@ -39,35 +40,35 @@ object TestServer {
   }
 
   def startServer(): String = this.synchronized {
-    if (server.isEmpty) {
+    if (server.get().isEmpty) {
       val port = findAvailablePort()
-      currentPort = Some(port)
+      currentPort.set(Some(port))
       ObjectStorageApp.configureRoutes(routes)
       val newServer = Undertow.builder
         .addHttpListener(port, "0.0.0.0")
         .setHandler(ObjectStorageApp.defaultHandler)
         .build
       newServer.start()
-      server = Some(newServer)
+      server.set(Some(newServer))
       val url = s"http://0.0.0.0:$port"
-      objectStorageClient = Some(ObjectStorageClient(url))
+      objectStorageClient.set(Some(ObjectStorageClient(url)))
       Thread.sleep(500) // Give Undertow time to bind to the port
       url
     } else {
-      s"http://0.0.0.0:${currentPort.get}"
+      s"http://0.0.0.0:${currentPort.get().get}"
     }
   }
 
   def getObjectStorageApi(): ObjectStorageClient = {
     startServer() // Ensure server is started
-    objectStorageClient.getOrElse(throw new IllegalStateException("Server not started"))
+    objectStorageClient.get().getOrElse(sys.error("Server not started"))
   }
 
   def stopServer(): Unit = this.synchronized {
-    server.foreach(_.stop())
-    server = None
-    currentPort = None
-    objectStorageClient = None
+    server.get().foreach(_.stop())
+    server.set(None)
+    currentPort.set(None)
+    objectStorageClient.set(None)
   }
 
   def withServer[T](f: String => T): T = {
@@ -91,7 +92,7 @@ object TestServer {
     val host = startServer()
     val temp = copyResourceFileToTemp(fileName)
     val checksum = FileManager.computeChecksum(temp)
-    objectStorageClient.get.checkFileByChecksum(
+    objectStorageClient.get().get.checkFileByChecksum(
       checksum,
       Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId)
     ) match {
@@ -110,14 +111,14 @@ object TestServer {
     val checksum = FileManager.computeChecksum(temp)
 
     implicit val checked: Boolean = false
-    objectStorageClient.get.checkFileByChecksum(
+    objectStorageClient.get().get.checkFileByChecksum(
       checksum,
       Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId)
     ) match {
       case Right(Some(so)) => so
       case _ =>
         val file = os.read.stream(temp)
-        objectStorageClient.get.uploadFile(
+        objectStorageClient.get().get.uploadFile(
           file,
           Map(
             "X-Tenant-Id" -> tenantId,
@@ -127,7 +128,7 @@ object TestServer {
           )
         ) match {
           case Right(so) => so
-          case Left(e) => throw e
+          case Left(e) => sys.error(s"Failed to upload file: $e")
         }
     }
   }

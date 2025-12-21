@@ -30,7 +30,7 @@ object DeleteFileTest extends TestSuite {
             assert(!os.exists(
               os.pwd / "bucket" / tenantId / userId / s"${storedObject.objectId.toString}.json"
             ))
-          case Left(e) => throw e
+          case Left(e) => sys.error(e.getMessage)
         }
       }
     }
