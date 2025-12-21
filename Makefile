@@ -5,8 +5,11 @@
 help:
 	@echo "ObjectStorage Build System"
 	@echo ""
-	@echo "Build & Format:"
+	@echo "Build & Run:"
 	@echo "  make build        - Compile the project"
+	@echo "  make run          - Run the ObjectStorage server"
+	@echo ""
+	@echo "Format & Lint:"
 	@echo "  make format       - Format code with Scalafmt"
 	@echo "  make fmt          - Alias for format"
 	@echo "  make format-check - Check formatting without changes"

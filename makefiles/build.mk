@@ -3,11 +3,15 @@
 # Use local mill wrapper if available, otherwise system mill
 MILL := $(shell if [ -x ./mill ]; then echo ./mill; else echo mill; fi)
 
-.PHONY: build format fmt format-check lint fix clean
+.PHONY: build run format fmt format-check lint fix clean
 
 # Compile the project
 build:
 	$(MILL) ObjectStorage.compile
+
+# Run the ObjectStorage server
+run:
+	$(MILL) ObjectStorage.run
 
 # Format code with Scalafmt
 format:

@@ -45,6 +45,20 @@ object Config {
     }
   }
 
+  private def getConfigBoolean(key: String): Either[AppError, Boolean] = {
+    getConfigValue(key).flatMap { value =>
+      value.toLowerCase match {
+        case "true" | "1" | "yes" => Right(true)
+        case "false" | "0" | "no" => Right(false)
+        case _ => Left(AppError(s"$key is not a valid boolean: $value"))
+      }
+    }
+  }
+
+  private def getOptionalConfigValue(key: String): Option[String] = {
+    dotenvRef.get().flatMap(_.get(key)).filter(_.nonEmpty)
+  }
+
   // ObjectStorage-specific configuration
   lazy val OBJECT_STORAGE_HOST: String = getConfigValue("OBJECT_STORAGE_HOST") match {
     case Right(value) => value
@@ -68,6 +82,13 @@ object Config {
   lazy val STORAGE_BASE_PATH: String = getConfigValue("STORAGE_BASE_PATH") match {
     case Right(value) => value
     case Left(_) => "./bucket"
+  }
+
+  // Authentication configuration
+  // Default to "test-api-key" for development/testing; override via API_KEY env var in production
+  lazy val API_KEY: String = getConfigValue("API_KEY") match {
+    case Right(value) => value
+    case Left(_) => "test-api-key"
   }
 
   private def toUrl(host: String, port: Int): String = {
@@ -95,5 +116,16 @@ object Config {
   /** Get long config value */
   def getLong(key: String, default: Long = 0L): Long = {
     dotenvRef.get().flatMap(_.get(key)).map(_.toLongOption.getOrElse(default)).getOrElse(default)
+  }
+
+  /** Get boolean config value */
+  def getBoolean(key: String, default: Boolean = false): Boolean = {
+    dotenvRef.get().flatMap(_.get(key)).map { value =>
+      value.toLowerCase match {
+        case "true" | "1" | "yes" => true
+        case "false" | "0" | "no" => false
+        case _ => default
+      }
+    }.getOrElse(default)
   }
 }

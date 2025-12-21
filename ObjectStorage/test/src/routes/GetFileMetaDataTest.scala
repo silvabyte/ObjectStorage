@@ -2,7 +2,7 @@ package objectstorage.test.routes
 
 import utest._
 import objectstorage.config.{Config, AppError}
-import objectstorage.test.TestServer.{stageFile, withServer, getObjectStorageApi}
+import objectstorage.test.TestServer.{stageFile, withServer, getObjectStorageApi, testApiKey}
 import objectstorage.models.StoredObject
 import java.util.UUID
 import os._
@@ -28,7 +28,7 @@ object GetFileMetaDataTest extends TestSuite {
         val obj = getObjectStorageApi()
           .getFileMetadata(
             storedObject.objectId,
-            Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId)
+            Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId, "x-api-key" -> testApiKey)
           ) match {
           case Right(obj) => obj
           case Left(e) =>
@@ -46,7 +46,7 @@ object GetFileMetaDataTest extends TestSuite {
         getObjectStorageApi()
           .getFileMetadata(
             UUID.randomUUID(),
-            Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId)
+            Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId, "x-api-key" -> testApiKey)
           ) match {
           case Left(e) =>
             assert(e == AppError("Failed to get file metadata: 404"))

@@ -1,5 +1,6 @@
 package objectstorage.routes
 
+import objectstorage.decorators.Decorators
 import objectstorage.filemanager._
 import objectstorage.logging.Log
 import objectstorage.models._
@@ -16,8 +17,9 @@ import io.undertow.server.handlers.form.FormParserFactory
 /**
  * REST API routes for file operations.
  *
- * Provides endpoints for upload, download, list, delete, and metadata operations. All file operations require
- * x-tenant-id and x-user-id headers which are validated via schema.
+ * Provides endpoints for upload, download, list, delete, and metadata operations.
+ * All file operations require authentication via the withAuth decorator, which
+ * provides tenant and user identity through AuthenticatedUser.
  */
 case class FileRoutes() extends cask.Routes {
 
@@ -27,26 +29,24 @@ case class FileRoutes() extends cask.Routes {
   // Helper Methods
   // ============================================================================
 
-  /** Extract tenant and user IDs from validated request headers. */
+  /**
+   * Extract tenant and user IDs from the authenticated user.
+   *
+   * The withAuth decorator stores an AuthenticatedUser in the request exchange,
+   * which contains the tenantId and userId. This method retrieves that user
+   * or returns an error if authentication somehow failed.
+   */
   private def extractTenantUser(r: ValidatedRequest): Either[Response[String], (String, String)] = {
-    val tenantId = r.getHeader("x-tenant-id")
-    val userId = r.getHeader("x-user-id")
-
-    (tenantId, userId) match {
-      case (Some(tid), Some(uid)) => Right((tid, uid))
-      case (None, _) =>
+    Decorators.getAuthenticatedUser(r.original) match {
+      case Some(user) =>
+        Right((user.tenantId, user.userId))
+      case None =>
+        // This should not happen if withAuth decorator is properly configured,
+        // but we handle it gracefully
         Left(
           Response(
-            write(ErrorResponse("Request is missing required header: 'x-tenant-id'", "error")),
-            400,
-            Seq("Content-Type" -> "application/json")
-          )
-        )
-      case (_, None) =>
-        Left(
-          Response(
-            write(ErrorResponse("Request is missing required header: 'x-user-id'", "error")),
-            400,
+            write(ErrorResponse("Authentication required", "unauthorized")),
+            401,
             Seq("Content-Type" -> "application/json")
           )
         )

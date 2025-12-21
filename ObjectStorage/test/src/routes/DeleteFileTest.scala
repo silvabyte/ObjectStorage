@@ -2,7 +2,7 @@ package objectstorage.test.routes
 
 import utest._
 import objectstorage.config.Config
-import objectstorage.test.TestServer.{stageFile, withServer, getObjectStorageApi}
+import objectstorage.test.TestServer.{stageFile, withServer, getObjectStorageApi, testApiKey}
 import os._
 
 object DeleteFileTest extends TestSuite {
@@ -21,7 +21,7 @@ object DeleteFileTest extends TestSuite {
         implicit val checked: Boolean = false
         getObjectStorageApi().deleteFile(
           storedObject.objectId,
-          Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId)
+          Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId, "x-api-key" -> testApiKey)
         ) match {
           case Right(_) =>
             assert(

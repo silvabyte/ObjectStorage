@@ -84,6 +84,9 @@ object TestServer {
     temp
   }
 
+  // Default test API key (matches Config default)
+  val testApiKey = "test-api-key"
+
   def getStagedFileByChecksum(
       tenantId: String,
       userId: String,
@@ -94,7 +97,7 @@ object TestServer {
     val checksum = FileManager.computeChecksum(temp)
     objectStorageClient.get().get.checkFileByChecksum(
       checksum,
-      Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId)
+      Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId, "x-api-key" -> testApiKey)
     ) match {
       case Right(Some(so)) => Some(so)
       case _ => None
@@ -113,7 +116,7 @@ object TestServer {
     implicit val checked: Boolean = false
     objectStorageClient.get().get.checkFileByChecksum(
       checksum,
-      Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId)
+      Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId, "x-api-key" -> testApiKey)
     ) match {
       case Right(Some(so)) => so
       case _ =>
@@ -124,7 +127,8 @@ object TestServer {
             "X-Tenant-Id" -> tenantId,
             "X-User-Id" -> userId,
             "x-file-name" -> fileName,
-            "x-mimetype" -> "audio/wav"
+            "x-mimetype" -> "audio/wav",
+            "x-api-key" -> testApiKey
           )
         ) match {
           case Right(so) => so
@@ -140,7 +144,7 @@ object TestServer {
       case Some(so) =>
         requests.delete(
           s"$host/api/v1/files/${so.objectId}",
-          headers = Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId)
+          headers = Map("X-Tenant-Id" -> tenantId, "X-User-Id" -> userId, "x-api-key" -> testApiKey)
         )
   }
 }

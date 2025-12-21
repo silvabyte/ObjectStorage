@@ -21,7 +21,8 @@ object ObjectStorageApp extends cask.Main {
   override def host: String = Config.stripProtocol(Config.OBJECT_STORAGE_HOST)
 
   // Decorators for global middleware
-  override def mainDecorators: Seq[RawDecorator] = Seq(withResponseLog())
+  // Auth is always included - when disabled, NoAuthProvider passes through header-based identity
+  override def mainDecorators: Seq[RawDecorator] = Seq(withResponseLog(), withAuth())
 
   Log.info("Starting ObjectStorageApp", Map("host" -> host, "port" -> port))
 

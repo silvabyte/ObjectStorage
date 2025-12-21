@@ -3,7 +3,7 @@ package objectstorage.test.routes
 import utest._
 import objectstorage.config.Config
 import objectstorage.models.StoredObject
-import objectstorage.test.TestServer.{stageFile, withServer, getObjectStorageApi}
+import objectstorage.test.TestServer.{stageFile, withServer, getObjectStorageApi, testApiKey}
 import os._
 
 object ListFilesTest extends TestSuite {
@@ -19,7 +19,7 @@ object ListFilesTest extends TestSuite {
         val fileName = "gain_audio_20250112_090406.wav"
         val storedObject = stageFile(tenantId, userId, fileName).objectId
         val objs = getObjectStorageApi()
-          .listFiles(Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId))
+          .listFiles(Map("X-Tenant-ID" -> tenantId, "X-User-ID" -> userId, "x-api-key" -> testApiKey))
           .fold(e => sys.error(e.getMessage), identity)
         assert(objs.length > 0)
         assert(objs.map(_.objectId).contains(storedObject))

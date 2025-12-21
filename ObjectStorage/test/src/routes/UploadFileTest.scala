@@ -2,7 +2,7 @@ package objectstorage.test.routes
 
 import utest._
 import objectstorage.config.{Config, AppError}
-import objectstorage.test.TestServer.{withServer, tryTeardownFile, getObjectStorageApi}
+import objectstorage.test.TestServer.{withServer, tryTeardownFile, getObjectStorageApi, testApiKey}
 import os._
 
 object UploadFileTest extends TestSuite {
@@ -28,7 +28,8 @@ object UploadFileTest extends TestSuite {
               "X-Tenant-Id" -> tenantId,
               "X-User-Id" -> userId,
               "x-file-name" -> fileName,
-              "x-mimetype" -> "audio/wav"
+              "x-mimetype" -> "audio/wav",
+              "x-api-key" -> testApiKey
             )
           ) match {
           case Left(e) =>
@@ -53,7 +54,8 @@ object UploadFileTest extends TestSuite {
               "X-Tenant-Id" -> tenantId,
               "X-User-Id" -> userId,
               "x-file-name" -> fileName,
-              "x-mimetype" -> "audio/wav"
+              "x-mimetype" -> "audio/wav",
+              "x-api-key" -> testApiKey
             )
           ) match {
             case Left(e) =>
