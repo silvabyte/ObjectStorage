@@ -44,6 +44,9 @@ jobs:
       - name: Check formatting
         run: mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 
+      - name: Install Coursier
+        uses: coursier/setup-action@v1
+
       - name: Lint (Scalafix)
         run: |
           mill ObjectStorage.fixCheck
