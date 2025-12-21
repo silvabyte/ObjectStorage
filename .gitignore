@@ -18,7 +18,6 @@ out/
 .bsp/
 .idea/
 .idea_modules/
-.mill-version
 mill-build/
 
 # Storage (runtime data)
