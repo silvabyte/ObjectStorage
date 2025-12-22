@@ -4,6 +4,7 @@ import scala.collection.mutable
 
 /** Simple .env file loader for configuration with sys.env fallback */
 case class DotEnv(env: mutable.Map[String, String]) {
+
   /** Get a value from the .env file, falling back to system environment */
   def get(key: String): Option[String] = env.get(key).orElse(sys.env.get(key))
 
