@@ -1,6 +1,7 @@
 package objectstorage.routes
 
 import objectstorage.decorators.Decorators
+import objectstorage.decorators.Decorators.withAuth
 import objectstorage.filemanager._
 import objectstorage.logging.Log
 import objectstorage.models._
@@ -76,6 +77,7 @@ case class FileRoutes() extends cask.Routes {
   // ============================================================================
 
   /** List all files for a tenant and user */
+  @withAuth()
   @Web.get(
     s"$apiPrefix/files/list",
     RouteSchema(
@@ -103,6 +105,7 @@ case class FileRoutes() extends cask.Routes {
   }
 
   /** Get metadata for a single file using its UUID */
+  @withAuth()
   @Web.get(
     s"$apiPrefix/files/metadata/:objectId",
     RouteSchema(
@@ -138,6 +141,7 @@ case class FileRoutes() extends cask.Routes {
   // ============================================================================
 
   /** Download file content using its UUID */
+  @withAuth()
   @Web.get(
     s"$apiPrefix/files/:objectId",
     RouteSchema(
@@ -177,6 +181,7 @@ case class FileRoutes() extends cask.Routes {
   // ============================================================================
 
   /** Upload a file using multipart form data */
+  @withAuth()
   @Web.post(
     s"$apiPrefix/files/form",
     RouteSchema(
@@ -224,6 +229,7 @@ case class FileRoutes() extends cask.Routes {
   }
 
   /** Upload a file using raw stream with filename in headers */
+  @withAuth()
   @Web.post(
     s"$apiPrefix/files",
     RouteSchema(
@@ -272,6 +278,7 @@ case class FileRoutes() extends cask.Routes {
   // ============================================================================
 
   /** Delete a file using its UUID */
+  @withAuth()
   @Web.delete(
     s"$apiPrefix/files/:objectId",
     RouteSchema(
@@ -307,6 +314,7 @@ case class FileRoutes() extends cask.Routes {
   // ============================================================================
 
   /** Lookup a file by its checksum */
+  @withAuth()
   @Web.get(
     s"$apiPrefix/files/checksum/:checksum",
     RouteSchema(
@@ -337,6 +345,7 @@ case class FileRoutes() extends cask.Routes {
   // ============================================================================
 
   /** Append stream content to an NDJSON file */
+  @withAuth()
   @Web.post(
     s"$apiPrefix/files/:objectId/ndjson/append/stream",
     RouteSchema(
@@ -388,6 +397,7 @@ case class FileRoutes() extends cask.Routes {
   }
 
   /** Stream NDJSON items as raw stream */
+  @withAuth()
   @Web.get(
     s"$apiPrefix/files/:objectId/ndjson/items/stream",
     RouteSchema(

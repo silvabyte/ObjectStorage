@@ -3,7 +3,6 @@ package objectstorage
 import objectstorage.config.Config
 import objectstorage.logging.Log
 import objectstorage.routes.{FileRoutes, IndexRoutes}
-import objectstorage.decorators.Decorators._
 import cask._
 import java.util.concurrent.atomic.AtomicReference
 
@@ -20,9 +19,7 @@ object ObjectStorageApp extends cask.Main {
   override def port: Int = Config.OBJECT_STORAGE_PORT
   override def host: String = Config.stripProtocol(Config.OBJECT_STORAGE_HOST)
 
-  // Decorators for global middleware
-  // Auth is always included - when disabled, NoAuthProvider passes through header-based identity
-  override def mainDecorators: Seq[RawDecorator] = Seq(withResponseLog(), withAuth())
+  // No global decorators - auth is applied per-endpoint via @withAuth()
 
   Log.info("Starting ObjectStorageApp", Map("host" -> host, "port" -> port))
 
