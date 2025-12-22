@@ -2,11 +2,14 @@ package objectstorage.config
 
 import scala.collection.mutable
 
-/** Simple .env file loader for configuration */
+/** Simple .env file loader for configuration with sys.env fallback */
 case class DotEnv(env: mutable.Map[String, String]) {
-  def get(key: String): Option[String] = env.get(key)
+  /** Get a value from the .env file, falling back to system environment */
+  def get(key: String): Option[String] = env.get(key).orElse(sys.env.get(key))
 
-  def getOrElse(key: String, default: String): String = env.getOrElse(key, default)
+  /** Get a value with default, checking .env first, then sys.env */
+  def getOrElse(key: String, default: String): String =
+    env.get(key).orElse(sys.env.get(key)).getOrElse(default)
 
   def set(key: String, value: String): Unit = env(key) = value
 }
