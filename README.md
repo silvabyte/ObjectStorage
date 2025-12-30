@@ -46,11 +46,17 @@ docker build -t objectstorage -f docker/Dockerfile .
 docker-compose -f docker/compose.yml up
 ```
 
-## API
+## Documentation
 
-See [resources/openapi.yaml](resources/openapi.yaml) for the full OpenAPI specification.
+Full documentation is available in the [docs/](docs/) folder:
 
-### Endpoints
+- [API Reference](docs/api.md) - Complete REST API documentation
+- [Authentication](docs/authentication.md) - API key and identity headers
+- [Configuration](docs/configuration.md) - Environment variables and settings
+- [Storage](docs/storage.md) - File organization, deduplication, and locking
+- [Client SDK](docs/client.md) - Scala HTTP client usage
+
+### Quick API Overview
 
 | Method | Path                                | Description               |
 | ------ | ----------------------------------- | ------------------------- |
@@ -62,22 +68,19 @@ See [resources/openapi.yaml](resources/openapi.yaml) for the full OpenAPI specif
 | DELETE | `/api/v1/files/{objectId}`          | Delete file               |
 | GET    | `/api/v1/files/checksum/{checksum}` | Find file by checksum     |
 
-### Headers
+All file endpoints require headers: `x-api-key`, `x-tenant-id`, `x-user-id`
 
-All requests require:
+### Quick Configuration
 
-- `x-tenant-id` - Tenant identifier
-- `x-user-id` - User identifier
+| Variable              | Description       | Default        |
+| --------------------- | ----------------- | -------------- |
+| `OBJECT_STORAGE_HOST` | Server host       | `0.0.0.0`      |
+| `OBJECT_STORAGE_PORT` | Server port       | `8080`         |
+| `STORAGE_BASE_PATH`   | Storage directory | `./bucket`     |
+| `API_KEY`             | API key for auth  | `test-api-key` |
+| `LOG_PRETTY`          | Pretty print logs | `false`        |
 
-## Configuration
-
-Environment variables:
-
-| Variable              | Description       | Default   |
-| --------------------- | ----------------- | --------- |
-| `OBJECT_STORAGE_HOST` | Server host       | `0.0.0.0` |
-| `OBJECT_STORAGE_PORT` | Server port       | `8080`    |
-| `LOG_PRETTY`          | Pretty print logs | `false`   |
+See [Configuration](docs/configuration.md) for all options.
 
 ## Development
 
