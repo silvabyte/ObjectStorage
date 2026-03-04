@@ -200,7 +200,8 @@ object FileLockManager {
       case Right(_) =>
         try {
           Log.info(s"Lock acquired, executing operation", context)
-          operation match {
+          val result = operation
+          result match {
             case Left(operationError) =>
               Log.error(
                 s"Operation failed while holding lock",
@@ -209,7 +210,7 @@ object FileLockManager {
             case Right(_) =>
               Log.info(s"Operation completed successfully", context)
           }
-          operation
+          result
         } finally {
           releaseLock(fileContext) match {
             case Left(releaseError) =>

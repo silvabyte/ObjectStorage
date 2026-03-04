@@ -375,17 +375,17 @@ object FileManager {
     }
   }
 
-  /** Append stream content to an existing file with locking */
+  /** Append content to an existing file with locking */
   def appendToFileStream(
       tenantId: String,
       userId: String,
       objectId: UUID,
-      stream: geny.Readable
+      data: Array[Byte]
   ): Either[String, StoredObject] = {
     val fileContext = FileContext(tenantId, userId, objectId, "append")
 
     FileLockManager.withLock(fileContext) {
-      appendToFileStreamLocked(tenantId, userId, objectId, stream)
+      appendToFileStreamLocked(tenantId, userId, objectId, data)
     }
   }
 
@@ -393,7 +393,7 @@ object FileManager {
       tenantId: String,
       userId: String,
       objectId: UUID,
-      stream: geny.Readable
+      data: Array[Byte]
   ): Either[String, StoredObject] = {
     import objectstorage.models.Picklers.given
     val folder = buildFolderPath(tenantId, userId)
@@ -411,46 +411,34 @@ object FileManager {
         Log.error(s"Could not load metadata for objectId $objectId", context)
         Left("Could not load file metadata")
       case Some(existingObject) =>
+        Try {
+          os.write.append(contentFilePath, data)
 
-        val tempFile = os.temp()
+          val newSize = os.size(contentFilePath)
+          val newChecksum = computeChecksum(contentFilePath)
+          val updatedObject = existingObject.copy(
+            size = newSize,
+            lastModified = java.time.Instant.now(),
+            checksum = Some(newChecksum),
+            etag = Some(newChecksum)
+          )
 
-        writeFileSafe(tempFile, stream) match {
-          case Left(error) =>
-            Log.error(s"Failed to write stream to temp file: ${error.message}", context)
-            Left(s"Failed to append stream content: ${error.message}")
-          case Right(_) =>
-            Try {
-              val appendContent = os.read.bytes(tempFile)
-              os.write.append(contentFilePath, appendContent)
-              os.remove(tempFile)
+          os.write.over(metadataFilePath, StoredObject.toJson(updatedObject))
 
-              val newSize = os.size(contentFilePath)
-              val updatedObject = existingObject.copy(
-                size = newSize,
-                lastModified = java.time.Instant.now(),
-                checksum = Some(computeChecksum(contentFilePath)),
-                etag = Some(computeChecksum(contentFilePath))
-              )
+          val lookup = loadLookup(tenantId, userId)
+          val updatedLookup = lookup.filter(_._2 != objectId) + (newChecksum -> objectId)
+          saveLookup(tenantId, userId, updatedLookup)
 
-              os.write.over(metadataFilePath, StoredObject.toJson(updatedObject))
-
-              updatedObject.checksum.foreach { newChecksum =>
-                val lookup = loadLookup(tenantId, userId)
-                val updatedLookup = lookup.filter(_._2 != objectId) + (newChecksum -> objectId)
-                saveLookup(tenantId, userId, updatedLookup)
-              }
-
-              Log.info(
-                s"Stream content appended to file $objectId",
-                context + ("newSize" -> newSize.toString)
-              )
-              updatedObject
-            } match {
-              case Success(updatedObject) => Right(updatedObject)
-              case Failure(e) =>
-                Log.error(s"Failed to append stream to file: ${e.getMessage}", context)
-                Left(s"Failed to append stream content to file: ${e.getMessage}")
-            }
+          Log.info(
+            s"Content appended to file $objectId",
+            context + ("newSize" -> newSize.toString)
+          )
+          updatedObject
+        } match {
+          case Success(updatedObject) => Right(updatedObject)
+          case Failure(e) =>
+            Log.error(s"Failed to append to file: ${e.getMessage}", context)
+            Left(s"Failed to append content to file: ${e.getMessage}")
         }
     }
   }

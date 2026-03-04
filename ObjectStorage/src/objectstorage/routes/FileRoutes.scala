@@ -375,7 +375,8 @@ case class FileRoutes() extends cask.Routes {
           case Success(uuid) =>
             Log.info(s"Appending stream content to file $objectId", context)
 
-            FileManager.appendToFileStream(tenantId, userId, uuid, r.original.data) match {
+            val bodyBytes = r.original.data.readAllBytes()
+            FileManager.appendToFileStream(tenantId, userId, uuid, bodyBytes) match {
               case Left(error) =>
                 Log.error(s"Failed to append stream to file $objectId", context + ("error" -> error))
                 if (error.contains("not found")) {
