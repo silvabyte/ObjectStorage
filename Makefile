@@ -29,8 +29,15 @@ help:
 	@echo "  make docker-build - Build the Docker image"
 	@echo "  make docker-push  - Build and push image to GHCR"
 	@echo "  make docker-login - Log into GitHub Container Registry"
+	@echo ""
+	@echo "Deploy:"
+	@echo "  make deploy       - Deploy with Kamal (V=<sha>, default: current HEAD)"
+	@echo "  make deploy-setup - First-time Kamal setup on server"
+	@echo "  make deploy-logs  - Tail application logs"
+	@echo "  make deploy-details - Show running containers"
 
 include makefiles/build.mk
 include makefiles/test.mk
 include makefiles/ci.mk
 include makefiles/docker.mk
+include makefiles/deploy.mk

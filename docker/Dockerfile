@@ -21,6 +21,9 @@ RUN chmod +x mill && ./mill ObjectStorage.assembly
 # Final runtime image
 FROM eclipse-temurin:21-jre-alpine
 
+# Kamal requires this label to match the service name in deploy.yml
+LABEL service="objectstorage"
+
 # Install curl for healthchecks
 RUN apk add --no-cache curl
 

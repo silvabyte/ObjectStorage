@@ -1,0 +1,69 @@
+service: objectstorage
+image: silvabyte/objectstorage
+
+servers:
+  web:
+    hosts:
+      - 192.168.68.54
+    options:
+      user: "0:0"
+
+builder:
+  arch: amd64
+
+ssh:
+  user: riverbank
+
+registry:
+  server: ghcr.io
+  username: matsilva
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+deploy_timeout: 120
+
+proxy:
+  app_port: 38085
+  ssl: false
+  forward_headers: true
+  healthcheck:
+    interval: 3
+    path: /api/v1/health
+    timeout: 3
+  # Note: kamal-proxy was manually started with --http-port 38085 --https-port 38443
+  # because Synology doesn't grant NET_BIND_SERVICE to containers (can't bind port 80).
+  # If kamal-proxy is recreated (e.g. kamal proxy reboot), it must be manually fixed:
+  #   ssh riverbank@192.168.68.54
+  #   docker stop kamal-proxy && docker rm kamal-proxy
+  #   docker run --name kamal-proxy --network kamal --detach --restart unless-stopped \
+  #     --volume kamal-proxy-config:/home/kamal-proxy/.config/kamal-proxy \
+  #     --volume $PWD/.kamal/proxy/apps-config:/home/kamal-proxy/.apps-config \
+  #     --publish 38085:38085 --publish 38443:38443 --log-opt max-size=10m \
+  #     basecamp/kamal-proxy:v0.9.0 kamal-proxy run --http-port 38085 --https-port 38443
+
+env:
+  clear:
+    OBJECT_STORAGE_HOST: "0.0.0.0"
+    OBJECT_STORAGE_PORT: "38085"
+    JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xms512m -Xmx4g"
+  secret:
+    - API_KEY
+
+volumes:
+  - "/volume1/objectstorage:/app/bucket"
+  - "/volume1/objectstorage/@eaDir/@tmp:/tmp"
+
+accessories:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    hosts:
+      - 192.168.68.54
+    cmd: tunnel run
+    network: host
+    env:
+      secret:
+        - TUNNEL_TOKEN
+
+boot:
+  limit: 1
+  wait: 15

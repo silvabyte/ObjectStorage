@@ -58,5 +58,8 @@ logs/
 # Docker
 .docker/
 
+# Kamal
+.kamal/secrets
+
 .opencode/streams
 .opencode/streams.lock
