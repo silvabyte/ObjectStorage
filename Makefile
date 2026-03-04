@@ -24,7 +24,13 @@ help:
 	@echo "  make check        - Run build + test + format-check + lint"
 	@echo "  make ci           - Clean build + full check"
 	@echo "  make clean        - Remove build artifacts"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make docker-build - Build the Docker image"
+	@echo "  make docker-push  - Build and push image to GHCR"
+	@echo "  make docker-login - Log into GitHub Container Registry"
 
 include makefiles/build.mk
 include makefiles/test.mk
 include makefiles/ci.mk
+include makefiles/docker.mk
