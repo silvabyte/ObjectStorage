@@ -30,7 +30,7 @@ type FileStore struct {
 // NewFileStore creates a new FileStore rooted at basePath.
 func NewFileStore(basePath string) *FileStore {
 	lockBasePath := filepath.Join(basePath, ".locks")
-	os.MkdirAll(lockBasePath, 0755)
+	_ = os.MkdirAll(lockBasePath, 0755)
 	return &FileStore{
 		basePath: basePath,
 		lockMgr:  newLockManager(lockBasePath),

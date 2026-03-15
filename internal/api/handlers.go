@@ -37,7 +37,7 @@ func mapStoreError(err error, objectID string) error {
 }
 
 func writeJSON(w io.Writer, v any) {
-	json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(v)
 }
 
 // --- List Files ---
@@ -107,7 +107,7 @@ func handleDownloadFile(store *storage.FileStore) func(ctx context.Context, inpu
 			Body: func(ctx huma.Context) {
 				ctx.SetHeader("Content-Type", contentType)
 				ctx.SetStatus(http.StatusOK)
-				io.Copy(ctx.BodyWriter(), f)
+				_, _ = io.Copy(ctx.BodyWriter(), f)
 				f.Close()
 			},
 		}, nil
@@ -266,7 +266,7 @@ func handleNDJSONStream(store *storage.FileStore) func(ctx context.Context, inpu
 			Body: func(ctx huma.Context) {
 				ctx.SetHeader("Content-Type", "application/x-ndjson")
 				ctx.SetStatus(http.StatusOK)
-				io.Copy(ctx.BodyWriter(), f)
+				_, _ = io.Copy(ctx.BodyWriter(), f)
 				f.Close()
 			},
 		}, nil

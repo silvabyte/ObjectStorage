@@ -68,17 +68,13 @@ func isPublicPath(method, path string) bool {
 		return true
 	}
 
-	if strings.HasPrefix(path, "/schemas/") {
-		return true
-	}
-
-	return false
+	return strings.HasPrefix(path, "/schemas/")
 }
 
 func writeAuthError(w http.ResponseWriter, message, status string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"message": message,
 		"status":  status,
 	})

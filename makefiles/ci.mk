@@ -4,7 +4,7 @@ vet:
 	go vet ./...
 
 lint:
-	golangci-lint run
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 
 format:
 	gofmt -w .
