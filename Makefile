@@ -1,5 +1,5 @@
 # ObjectStorage Makefile
-# Modular build system for Scala project
+# Modular build system for Go project
 
 .PHONY: help
 help:
@@ -10,18 +10,19 @@ help:
 	@echo "  make run          - Run the ObjectStorage server"
 	@echo ""
 	@echo "Format & Lint:"
-	@echo "  make format       - Format code with Scalafmt"
+	@echo "  make format       - Format code with gofmt"
 	@echo "  make fmt          - Alias for format"
 	@echo "  make format-check - Check formatting without changes"
-	@echo "  make lint         - Run Scalafix linter"
-	@echo "  make fix          - Auto-fix linting issues"
+	@echo "  make vet          - Run go vet"
+	@echo "  make lint         - Run golangci-lint"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test         - Run all tests"
-	@echo "  make test-only T= - Run specific test (e.g., make test-only T=ConfigTest)"
+	@echo "  make test-only T= - Run specific test (e.g., make test-only T=TestUpload)"
+	@echo "  make test-cover   - Run tests with coverage report"
 	@echo ""
 	@echo "CI:"
-	@echo "  make check        - Run build + test + format-check + lint"
+	@echo "  make check        - Run vet + lint + test + build"
 	@echo "  make ci           - Clean build + full check"
 	@echo "  make clean        - Remove build artifacts"
 	@echo ""

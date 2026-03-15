@@ -1,65 +1,37 @@
 # OS
 .DS_Store
 Thumbs.db
-.out
 
-# Scala/Java
-*.class
-*.log
-.bloop
-target/
-.scala-build/
-
-# virtual machine crash logs
-hs_err_pid*
-
-# Mill build tool
-out/
-.bsp/
-.idea/
-.idea_modules/
-mill-build/
+# Go
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
 
 # Storage (runtime data)
 bucket/
-work/
 *.tmp
 
 # IDE
-.metals
-.vscode
-*.iml
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
-.project
-.classpath
-.settings/
 
 # Environment
 .env
 .env.*
 !.env.example
 
-# Node.js (npx might create cache)
-node_modules/
-npm-debug.log*
-package-lock.json
-yarn.lock
-.npm/
-
-# Testing
-test-output/
-coverage/
-
-# Logs
-logs/
-
-# Docker
-.docker/
-
 # Kamal
 .kamal/secrets
 
+# Editor tools
 .opencode/streams
 .opencode/streams.lock

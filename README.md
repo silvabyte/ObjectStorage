@@ -1,15 +1,16 @@
 # ObjectStorage
 
-A standalone object storage service built with Scala 3 and Cask. Provides multi-tenant file management with checksums, deduplication, and append only locking.
+A multi-tenant file storage microservice built with Go, [huma](https://huma.rocks/), and chi. Provides file management with checksums, deduplication, and append-only locking.
 
 ## Features
 
-- **Multi-tenant file storage** - Isolated storage per tenant/user
-- **Checksum-based deduplication** - SHA-256 checksums for integrity and dedup
-- **REST API** - Simple HTTP API for upload, download, list, delete
-- **Streaming uploads** - Efficient handling of large files
-- **File locking** - File-based locks for concurrent append only operations
-- **Metadata management** - Custom metadata per file
+- **Multi-tenant file storage** — Isolated storage per tenant/user
+- **Checksum-based deduplication** — SHA-256 checksums for integrity and dedup
+- **REST API** — HTTP API for upload, download, list, delete
+- **Streaming uploads** — Efficient handling of large files
+- **File locking** — File-based locks for concurrent append-only operations
+- **NDJSON support** — Append and stream newline-delimited JSON files
+- **Auto-generated OpenAPI 3.1** — Full spec at `/openapi.json`, docs at `/docs`
 
 AI Disclaimer: This project uses AI assistance for documentation creation as well as code generation for monotonous tasks. All architecture, design and more interesting code creation is done by a [human](https://x.com/MatSilva)
 
@@ -17,60 +18,22 @@ AI Disclaimer: This project uses AI assistance for documentation creation as wel
 
 ### Prerequisites
 
-- JDK 21+
-- [Mill](https://mill-build.org/) build tool
+- Go 1.24+
 
 ### Build & Run
 
 ```bash
-# Compile
-./mill ObjectStorage.compile
+# Run the server
+make run
+
+# Build binary
+make build
 
 # Run tests
-./mill ObjectStorage.test
-
-# Run the server
-./mill ObjectStorage.run
-
-# Build assembly JAR
-./mill ObjectStorage.assembly
+make test
 ```
 
-### Docker
-
-```bash
-# Build image
-docker build -t objectstorage -f docker/Dockerfile .
-
-# Run with docker-compose
-docker-compose -f docker/compose.yml up
-```
-
-## Documentation
-
-Full documentation is available in the [docs/](docs/) folder:
-
-- [API Reference](docs/api.md) - Complete REST API documentation
-- [Authentication](docs/authentication.md) - API key and identity headers
-- [Configuration](docs/configuration.md) - Environment variables and settings
-- [Storage](docs/storage.md) - File organization, deduplication, and locking
-- [Client SDK](docs/client.md) - Scala HTTP client usage
-
-### Quick API Overview
-
-| Method | Path                                | Description               |
-| ------ | ----------------------------------- | ------------------------- |
-| GET    | `/api/v1/files/list`                | List all files for tenant |
-| POST   | `/api/v1/files`                     | Upload file (stream)      |
-| POST   | `/api/v1/files/form`                | Upload file (multipart)   |
-| GET    | `/api/v1/files/{objectId}`          | Download file             |
-| GET    | `/api/v1/files/metadata/{objectId}` | Get file metadata         |
-| DELETE | `/api/v1/files/{objectId}`          | Delete file               |
-| GET    | `/api/v1/files/checksum/{checksum}` | Find file by checksum     |
-
-All file endpoints require headers: `x-api-key`, `x-tenant-id`, `x-user-id`
-
-### Quick Configuration
+### Configuration
 
 | Variable              | Description       | Default        |
 | --------------------- | ----------------- | -------------- |
@@ -80,19 +43,53 @@ All file endpoints require headers: `x-api-key`, `x-tenant-id`, `x-user-id`
 | `API_KEY`             | API key for auth  | `test-api-key` |
 | `LOG_PRETTY`          | Pretty print logs | `false`        |
 
-See [Configuration](docs/configuration.md) for all options.
+Copy `.env.example` to `.env` to configure locally.
 
-## Development
+### API Overview
+
+| Method | Path                                          | Description               |
+| ------ | --------------------------------------------- | ------------------------- |
+| GET    | `/api/v1/files/list`                          | List all files for tenant |
+| POST   | `/api/v1/files`                               | Upload file (stream)      |
+| POST   | `/api/v1/files/form`                          | Upload file (multipart)   |
+| GET    | `/api/v1/files/{objectId}`                    | Download file             |
+| GET    | `/api/v1/files/metadata/{objectId}`           | Get file metadata         |
+| DELETE | `/api/v1/files/{objectId}`                    | Delete file               |
+| GET    | `/api/v1/files/checksum/{checksum}`           | Find file by checksum     |
+| POST   | `/api/v1/files/{objectId}/ndjson/append/stream` | Append to NDJSON file   |
+| GET    | `/api/v1/files/{objectId}/ndjson/items/stream`  | Stream NDJSON file      |
+
+All file endpoints require headers: `x-api-key`, `x-tenant-id`, `x-user-id`
+
+### OpenAPI
+
+Full OpenAPI 3.1 spec: `GET /openapi.json`
+
+Interactive docs: `GET /docs`
+
+### Docker
 
 ```bash
-# Format code
-./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources
+make docker-build
+```
 
-# Lint check
-./mill fixCheckAll
+### Deploy
 
-# Auto-fix lint issues
-./mill fixAll
+```bash
+make deploy
+```
+
+### Testing
+
+```bash
+# All tests
+make test
+
+# Specific test
+make test-only T=TestUpload
+
+# With coverage
+make test-cover
 ```
 
 ## License

@@ -1,9 +1,19 @@
-# CI targets
+.PHONY: check ci vet lint format fmt
 
-.PHONY: check ci
+vet:
+	go vet ./...
 
-# Run all checks (build + test + format-check + lint)
-check: build test format-check lint
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 
-# Clean build + full check
+format:
+	gofmt -w .
+
+fmt: format
+
+format-check:
+	@test -z "$$(gofmt -l .)" || (echo "Files need formatting:" && gofmt -l . && exit 1)
+
+check: vet lint test build
+
 ci: clean check

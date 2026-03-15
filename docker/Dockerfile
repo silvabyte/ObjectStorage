@@ -1,54 +1,19 @@
-# ObjectStorage - Standalone Object Storage Service
-# Multi-stage build for smaller final image
-
-# Build stage (optional - use if building from source)
-FROM eclipse-temurin:21-jdk-alpine AS builder
-
-# Install curl for mill wrapper script
-RUN apk add --no-cache curl
-
+# Build stage
+FROM golang:1.26-alpine AS builder
 WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /objectstorage ./cmd/objectstorage
 
-# Copy mill wrapper and build files
-COPY mill mill
-COPY build.mill build.mill
-COPY .mill-version .mill-version
-COPY ObjectStorage/ ObjectStorage/
-
-# Build the assembly JAR
-RUN chmod +x mill && ./mill ObjectStorage.assembly
-
-# Final runtime image
-FROM eclipse-temurin:21-jre-alpine
-
-# Kamal requires this label to match the service name in deploy.yml
+# Runtime stage
+FROM alpine:3.21
 LABEL service="objectstorage"
-
-# Install curl for healthchecks
-RUN apk add --no-cache curl
-
+RUN adduser -D -u 1001 objectstorage
 WORKDIR /app
-
-# Copy built JAR from builder stage
-COPY --from=builder /build/out/ObjectStorage/assembly.dest/out.jar /app/objectstorage.jar
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S objectstorage && \
-    adduser -u 1001 -S objectstorage -G objectstorage && \
-    mkdir -p /app/bucket && \
-    chown -R objectstorage:objectstorage /app
-
+COPY --from=builder /objectstorage /app/objectstorage
+RUN mkdir -p /app/bucket && chown -R objectstorage:objectstorage /app
 USER objectstorage
-
-# Expose default port
 EXPOSE 8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:${OBJECT_STORAGE_PORT:-8080}/api/v1/health || exit 1
-
-# JVM options for containers
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
-
-# Use Java to run the JAR
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/objectstorage.jar"]
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8080/api/v1/health || exit 1
+ENTRYPOINT ["/app/objectstorage"]

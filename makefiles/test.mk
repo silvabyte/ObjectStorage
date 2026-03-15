@@ -1,15 +1,11 @@
-# Test targets
+.PHONY: test test-only test-cover
 
-# Use local mill wrapper if available, otherwise system mill
-MILL := $(shell if [ -x ./mill ]; then echo ./mill; else echo mill; fi)
-
-.PHONY: test test-only
-
-# Run all tests
 test:
-	$(MILL) ObjectStorage.test
+	go test ./...
 
-# Run specific test class
-# Usage: make test-only T=ConfigTest
+# Run specific test: make test-only T=TestUpload
 test-only:
-	$(MILL) ObjectStorage.test.testOnly -- *$(T)*
+	go test -run $(T) ./...
+
+test-cover:
+	go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
