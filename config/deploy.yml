@@ -45,13 +45,11 @@ env:
   clear:
     OBJECT_STORAGE_HOST: "0.0.0.0"
     OBJECT_STORAGE_PORT: "38085"
-    JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Xms512m -Xmx4g"
   secret:
     - API_KEY
 
 volumes:
   - "/volume1/objectstorage:/app/bucket"
-  - "/volume1/objectstorage/@eaDir/@tmp:/tmp"
 
 accessories:
   cloudflared:
